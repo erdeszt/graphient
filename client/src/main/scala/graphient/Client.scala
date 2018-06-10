@@ -4,56 +4,87 @@ import sangria.schema._
 import sangria.execution._
 import sangria.marshalling.circe._
 import cats.implicits._
-// import com.softwaremill.sttp._
+import com.softwaremill.sttp._
+import cats.effect._
+import org.http4s._
+import org.http4s.dsl.io._
+import org.http4s.implicits._
+import org.http4s.server.blaze._
+
+import scala.concurrent.ExecutionContext.Implicits.global
 
 object Client extends App {
 
   object Test {
 
-    case class User(
-        id:   Long,
-        name: String,
-        age:  Int
-    )
+    object Domain {
+      case class User(
+          id:   Long,
+          name: String,
+          age:  Int
+      )
 
-    trait UserRepo {
-      def getUser(id: Long): User
-    }
+      trait UserRepo {
+        def getUser(id: Long): User
+      }
 
-    object FakeUserRepo extends UserRepo {
-      def getUser(id: Long) = {
-        User(id, s"Fake user $id", 20 + id.toInt)
+      object FakeUserRepo extends UserRepo {
+        def getUser(id: Long) = {
+          User(id, s"Fake user $id", 20 + id.toInt)
+        }
       }
     }
 
-    val UserType = ObjectType(
-      "User",
-      "User desc...",
-      fields[Unit, User](
-        Field("id", LongType, resolve     = _.value.id),
-        Field("name", StringType, resolve = _.value.name),
-        Field("age", IntType, resolve     = _.value.age)
-      )
-    )
+    object Schema {
+      import Domain._
 
-    val UserId = Argument("userId", LongType)
-
-    val QueryType = ObjectType(
-      "Query",
-      fields[UserRepo, Unit](
-        Field(
-          "getUser",
-          UserType,
-          arguments = UserId :: Nil,
-          resolve   = request => request.ctx.getUser(request.args.arg(UserId))
+      val UserType = ObjectType(
+        "User",
+        "User desc...",
+        fields[Unit, User](
+          Field("id", LongType, resolve     = _.value.id),
+          Field("name", StringType, resolve = _.value.name),
+          Field("age", IntType, resolve     = _.value.age)
         )
       )
-    )
 
-    val schema = Schema(QueryType)
+      val UserId = Argument("userId", LongType)
+
+      val QueryType = ObjectType(
+        "Query",
+        fields[UserRepo, Unit](
+          Field(
+            "getUser",
+            UserType,
+            arguments = UserId :: Nil,
+            resolve   = request => request.ctx.getUser(request.args.arg(UserId))
+          )
+        )
+      )
+
+      val schema = sangria.schema.Schema(QueryType)
+    }
+
+    object Server {
+
+      val graphqlService = HttpService[IO] {
+        case GET -> Root / "graphql" =>
+          Ok(s"Hello, graphql.")
+      }
+
+      def apply() = {
+        BlazeBuilder[IO]
+          .bindHttp(8080, "localhost")
+          .mountService(graphqlService, "/")
+      }
+
+    }
 
     def demo(): Unit = {
-      println(Client(schema)(Query("getUser"), Map("userId" -> 1L)))
+      println(Client(Schema.schema)(Query("getUser"), Map("userId" -> 1L)))
+      val server = Server().start.unsafeRunSync()
+      scala.io.StdIn.readLine()
+      server.shutdown.unsafeRunSync()
     }
   }
 
@@ -74,19 +105,25 @@ object Client extends App {
   case class FieldNotFound(graphqlCall:          GraphqlCall) extends GraphqlCallError
   case class ArgumentNotFound[T](argument:       Argument[T]) extends GraphqlCallError
   case class UnsuportedArgumentType[T](argument: Argument[T]) extends GraphqlCallError
+  case class UnsuportedOutputType[T](outputType: OutputType[T]) extends GraphqlCallError
 
   private def generateGraphqlCall[Ctx, R](
       field:     Field[Ctx, R],
       arguments: Client.ArgMap
   ): Either[GraphqlCallError, String] = {
+    // TODO: Figure out something better for formatting
     for {
       argumentList <- generateArgumentList(field, arguments)
       fieldList <- generateFields(field)
-    } yield s"${field.name}($argumentList) { $fieldList }"
+    } yield s"""${field.name}($argumentList) {
+         |\t$fieldList
+         |}""".stripMargin
   }
 
-  private def generateArgumentList[Ctx, R](field:     Field[Ctx, R],
-                                           arguments: Client.ArgMap): Either[GraphqlCallError, String] = {
+  private def generateArgumentList[Ctx, R](
+      field:     Field[Ctx, R],
+      arguments: Client.ArgMap
+  ): Either[GraphqlCallError, String] = {
     field.arguments
       .map(argument => generateArgument(argument, arguments(argument.name)))
       .sequence[EitherG, String]
@@ -101,15 +138,30 @@ object Client extends App {
   }
 
   private def generateFields[Ctx, R](field: Field[Ctx, R]): Either[GraphqlCallError, String] = {
-    Right("fields, ...")
+    field.fieldType match {
+      case obj: ObjectType[Ctx, _] =>
+        obj.fields
+          .map(generateField(_))
+          .sequence[EitherG, String]
+          .map(_.mkString(",\n\t"))
+      case _ => Left(UnsuportedOutputType(field.fieldType))
+    }
+  }
+
+  private def generateField[Ctx, R](value: Field[Ctx, R]): Either[GraphqlCallError, String] = {
+    Right(value.name)
   }
 
   private def queryWrapper(query: String): String = {
-    s"""query { $query }"""
+    s"""query { 
+       |  $query 
+       |}""".stripMargin
   }
 
   private def mutationWrapper(mutation: String): String = {
-    s"""mutation { $mutation }"""
+    s"""mutation {
+       |  $mutation
+       }""".stripMargin
   }
 
   def apply[Ctx, R](schema: Schema[Ctx, R])(
