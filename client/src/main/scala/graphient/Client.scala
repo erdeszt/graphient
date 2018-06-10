@@ -1,5 +1,6 @@
 package graphient
 
+import sangria.ast
 import sangria.schema._
 import sangria.execution._
 import sangria.marshalling.circe._
@@ -85,19 +86,13 @@ object Client extends App {
     }
 
     def demo(): Unit = {
-      Client(Schema())(Query("getUser"), Map("userId" -> 1L)) match {
-        case Left(error) => println(s"Failed to generate graphql call: $error")
-        case Right(rawQuery) =>
-          println(s"raw query: $rawQuery")
-          QueryParser.parse(rawQuery) match {
-            case Failure(e) => println(s"Failed to parse query: $e")
-            case Success(query) =>
-              val result = Await.result(Executor.execute(Schema(), query, Domain.FakeUserRepo), 5 seconds)
+      Client.generateGraphqlAst(Schema().query.fieldsByName("getUser").head, Map("userId" -> 1L)) match {
+        case Left(error) => println(s"Failed to generate graphql ast: $error")
+        case Right(ast) =>
+          val result = Await.result(Executor.execute(Schema(), ast, Domain.FakeUserRepo), 5 seconds)
 
-              println(result)
-          }
+          print(s"Result: $result")
       }
-
     }
   }
 
@@ -109,9 +104,7 @@ object Client extends App {
   sealed trait GraphqlCall {
     val field: String
   }
-
-  case class Query(field: String) extends GraphqlCall
-
+  case class Query(field:    String) extends GraphqlCall
   case class Mutation(field: String) extends GraphqlCall
 
   sealed trait GraphqlCallError
@@ -120,91 +113,95 @@ object Client extends App {
   case class UnsuportedArgumentType[T](argument: Argument[T]) extends GraphqlCallError
   case class UnsuportedOutputType[T](outputType: OutputType[T]) extends GraphqlCallError
 
-  private def generateGraphqlCall[Ctx, R](
+  def generateGraphqlAst[Ctx, R](
       field:     Field[Ctx, R],
-      arguments: Client.ArgMap
-  ): Either[GraphqlCallError, String] = {
-    // TODO: Figure out something better for formatting
+      arguments: ArgMap
+  ): Either[GraphqlCallError, ast.Document] = {
     for {
-      argumentList <- generateArgumentList(field, arguments)
-      fieldList <- generateFields(field)
-    } yield s"""${field.name}($argumentList) {
-         |\t$fieldList
-         |}""".stripMargin
+      argumentsAst <- generateArgumentListAst(field.arguments, arguments)
+      selectionsAst <- generateSelectionAst(field)
+    } yield wrapInDocument(field, argumentsAst, selectionsAst)
   }
 
-  private def generateArgumentList[Ctx, R](
-      field:     Field[Ctx, R],
-      arguments: Client.ArgMap
-  ): Either[GraphqlCallError, String] = {
-    field.arguments
-      .map(argument => generateArgument(argument, arguments(argument.name)))
-      .sequence[EitherG, String]
-      .map(_.mkString(", "))
+  private def wrapInDocument[Ctx, R](
+      field:      Field[Ctx, R],
+      arguments:  Vector[ast.Argument],
+      selections: Vector[ast.Selection]
+  ): ast.Document = {
+    ast.Document(
+      Vector(
+        ast.OperationDefinition(
+          selections = Vector(
+            ast.Field(
+              alias      = None,
+              name       = field.name,
+              arguments  = arguments,
+              directives = Vector(),
+              selections = selections
+            )
+          )
+        )
+      )
+    )
+
   }
 
-  private def generateArgument(argument: Argument[_], value: Any): Either[GraphqlCallError, String] = {
-    argument.argumentType match {
-      // TODO: Refactor name field generation
-      case _: ScalarType[Long] => Right(s"${argument.name}: $value")
-      case _ => Left(UnsuportedArgumentType(argument))
-    }
-  }
-
-  private def generateFields[Ctx, R](field: Field[Ctx, R]): Either[GraphqlCallError, String] = {
+  private def generateSelectionAst[Ctx, R](field: Field[Ctx, R]): Either[GraphqlCallError, Vector[ast.Selection]] = {
     field.fieldType match {
       case obj: ObjectType[Ctx, _] =>
-        obj.fields
-          .map(generateField(_))
-          .sequence[EitherG, String]
-          .map(_.mkString(",\n\t"))
+        val selections = obj.fields.map { field =>
+          ast.Field(
+            alias      = None,
+            name       = field.name,
+            arguments  = Vector(),
+            directives = Vector(),
+            selections = Vector()
+          )
+        }
+
+        Right(Vector(selections: _*))
       case _ => Left(UnsuportedOutputType(field.fieldType))
     }
   }
 
-  private def generateField[Ctx, R](value: Field[Ctx, R]): Either[GraphqlCallError, String] = {
-    Right(value.name)
+  private def generateArgumentListAst[Ctx, R](
+      arguments:      List[Argument[_]],
+      argumentValues: ArgMap
+  ): Either[GraphqlCallError, Vector[ast.Argument]] = {
+    arguments
+      .map { argument =>
+        argumentValues.get(argument.name) match {
+          case None => Left(ArgumentNotFound(argument))
+          case Some(argumentValue) =>
+            argumentValueToAstValue(argument, argumentValue).map(ast.Argument(argument.name, _))
+        }
+      }
+      .sequence[EitherG, ast.Argument]
+      .map(argumentList => Vector(argumentList: _*))
   }
 
-  private def queryWrapper(query: String): String = {
-    s"""query {
-       |  $query 
-       |}""".stripMargin
-  }
-
-  private def mutationWrapper(mutation: String): String = {
-    s"""mutation {
-       |  $mutation
-       }""".stripMargin
+  private def argumentValueToAstValue(argument: Argument[_], value: Any): Either[GraphqlCallError, ast.Value] = {
+    argument.argumentType match {
+      case longValue: ScalarType[Long] => Right(ast.BigIntValue(BigInt(value.asInstanceOf[Long])))
+      case _ => Left(UnsuportedArgumentType(argument))
+    }
   }
 
   def apply[Ctx, R](schema: Schema[Ctx, R])(
       call:                 GraphqlCall,
       argumentValues:       ArgMap
-  ): Either[GraphqlCallError, String] = {
+  ): Either[GraphqlCallError, ast.Document] = {
 
     // TODO: Why is the result a Vector???
-    val (fields, wrapper) = call match {
-      case Query(_)    => (schema.query.fieldsByName, queryWrapper(_))
-      case Mutation(_) => (schema.mutation.map(_.fieldsByName).getOrElse(Map()), mutationWrapper(_))
+    val fields = call match {
+      case Query(_)    => schema.query.fieldsByName
+      case Mutation(_) => schema.mutation.map(_.fieldsByName).getOrElse(Map())
     }
 
     fields.get(call.field) match {
       case None                           => Left(FieldNotFound(call))
       case Some(fields) if fields.isEmpty => Left(FieldNotFound(call))
-      case Some(fields) =>
-        val field = fields.head
-        val arguments = field.arguments.foldLeft[Either[GraphqlCallError, ArgMap]](Right(Map())) {
-          case (e @ Left(_), arg) => e
-          case (Right(argvs), arg) =>
-            argumentValues.get(arg.name) match {
-              case None => Left(ArgumentNotFound(arg))
-              // TODO: Check the type of the argument
-              case Some(argumentValue) => Right(argvs + (arg.name -> argumentValue))
-            }
-        }
-
-        arguments.flatMap(generateGraphqlCall(field, _)).map(wrapper(_))
+      case Some(fields)                   => generateGraphqlAst(fields.head, argumentValues)
     }
   }
 
