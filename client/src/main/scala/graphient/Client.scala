@@ -87,7 +87,7 @@ object Client extends App {
     }
 
     def demo(): Unit = {
-      Client.generateGraphqlAst(Schema().query.fieldsByName("getUser").head, Map("userId" -> 1L)) match {
+      Client(Schema())(Query("getUser"), Map("userId" -> 1L)) match {
         case Left(error) => println(s"Failed to generate graphql ast: $error")
         case Right(ast) =>
           val result = Await.result(Executor.execute(Schema(), ast, Domain.FakeUserRepo), 5 seconds)
@@ -116,23 +116,26 @@ object Client extends App {
   case class UnsuportedOutputType[T](outputType: OutputType[T]) extends GraphqlCallError
 
   def generateGraphqlAst[Ctx, R](
-      field:     Field[Ctx, R],
-      arguments: ArgMap
+      operationType: ast.OperationType,
+      field:         Field[Ctx, R],
+      arguments:     ArgMap
   ): Either[GraphqlCallError, ast.Document] = {
     for {
       argumentsAst <- generateArgumentListAst(field.arguments, arguments)
       selectionsAst <- generateSelectionAst(field)
-    } yield wrapInDocument(field, argumentsAst, selectionsAst)
+    } yield wrapInDocument(operationType, field, argumentsAst, selectionsAst)
   }
 
   private def wrapInDocument[Ctx, R](
-      field:      Field[Ctx, R],
-      arguments:  Vector[ast.Argument],
-      selections: Vector[ast.Selection]
+      operationType: ast.OperationType,
+      field:         Field[Ctx, R],
+      arguments:     Vector[ast.Argument],
+      selections:    Vector[ast.Selection]
   ): ast.Document = {
     ast.Document(
       Vector(
         ast.OperationDefinition(
+          operationType = operationType,
           selections = Vector(
             ast.Field(
               alias      = None,
@@ -195,15 +198,15 @@ object Client extends App {
   ): Either[GraphqlCallError, ast.Document] = {
 
     // TODO: Why is the result a Vector???
-    val fields = call match {
-      case Query(_)    => schema.query.fieldsByName
-      case Mutation(_) => schema.mutation.map(_.fieldsByName).getOrElse(Map())
+    val (fields, operationType) = call match {
+      case Query(_)    => (schema.query.fieldsByName, ast.OperationType.Query)
+      case Mutation(_) => (schema.mutation.map(_.fieldsByName).getOrElse(Map()), ast.OperationType.Mutation)
     }
 
     fields.get(call.field) match {
       case None                           => Left(FieldNotFound(call))
       case Some(fields) if fields.isEmpty => Left(FieldNotFound(call))
-      case Some(fields)                   => generateGraphqlAst(fields.head, argumentValues)
+      case Some(fields)                   => generateGraphqlAst(operationType, fields.head, argumentValues)
     }
   }
 
