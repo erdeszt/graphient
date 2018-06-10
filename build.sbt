@@ -8,10 +8,8 @@ lazy val client = (project in file("client")).
     scalacOptions += "-Ypartial-unification",
     libraryDependencies ++= sangria,
     libraryDependencies ++= circe,
-    libraryDependencies += sttp,
     libraryDependencies += cats,
     libraryDependencies += catsEffect,
-    libraryDependencies ++= http4s,
     libraryDependencies += scalaTest % Test
   )
 
