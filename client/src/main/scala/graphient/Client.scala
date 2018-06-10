@@ -3,6 +3,7 @@ package graphient
 import sangria.schema._
 import sangria.execution._
 import sangria.marshalling.circe._
+import sangria.parser._
 import cats.implicits._
 import com.softwaremill.sttp._
 import cats.effect._
@@ -11,7 +12,10 @@ import org.http4s.dsl.io._
 import org.http4s.implicits._
 import org.http4s.server.blaze._
 
+import scala.concurrent.Await
+import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.util.{Failure, Success}
 
 object Client extends App {
 
@@ -62,7 +66,7 @@ object Client extends App {
         )
       )
 
-      val schema = sangria.schema.Schema(QueryType)
+      def apply() = sangria.schema.Schema(QueryType)
     }
 
     object Server {
@@ -81,10 +85,19 @@ object Client extends App {
     }
 
     def demo(): Unit = {
-      println(Client(Schema.schema)(Query("getUser"), Map("userId" -> 1L)))
-      val server = Server().start.unsafeRunSync()
-      scala.io.StdIn.readLine()
-      server.shutdown.unsafeRunSync()
+      Client(Schema())(Query("getUser"), Map("userId" -> 1L)) match {
+        case Left(error) => println(s"Failed to generate graphql call: $error")
+        case Right(rawQuery) =>
+          println(s"raw query: $rawQuery")
+          QueryParser.parse(rawQuery) match {
+            case Failure(e) => println(s"Failed to parse query: $e")
+            case Success(query) =>
+              val result = Await.result(Executor.execute(Schema(), query, Domain.FakeUserRepo), 5 seconds)
+
+              println(result)
+          }
+      }
+
     }
   }
 
@@ -132,7 +145,8 @@ object Client extends App {
 
   private def generateArgument(argument: Argument[_], value: Any): Either[GraphqlCallError, String] = {
     argument.argumentType match {
-      case _: ScalarType[Long] => Right(s"$value")
+      // TODO: Refactor name field generation
+      case _: ScalarType[Long] => Right(s"${argument.name}: $value")
       case _ => Left(UnsuportedArgumentType(argument))
     }
   }
@@ -153,7 +167,7 @@ object Client extends App {
   }
 
   private def queryWrapper(query: String): String = {
-    s"""query { 
+    s"""query {
        |  $query 
        |}""".stripMargin
   }
