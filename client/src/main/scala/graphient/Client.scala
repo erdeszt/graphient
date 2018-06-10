@@ -5,6 +5,7 @@ import sangria.schema._
 import sangria.execution._
 import sangria.marshalling.circe._
 import sangria.parser._
+import sangria.renderer._
 import cats.implicits._
 import com.softwaremill.sttp._
 import cats.effect._
@@ -91,7 +92,8 @@ object Client extends App {
         case Right(ast) =>
           val result = Await.result(Executor.execute(Schema(), ast, Domain.FakeUserRepo), 5 seconds)
 
-          print(s"Result: $result")
+          println(QueryRenderer.render(ast))
+          println(s"Result: $result")
       }
     }
   }
