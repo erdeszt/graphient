@@ -21,9 +21,6 @@ case class UnsuportedOutputType[T](outputType: OutputType[T]) extends GraphqlCal
 
 case class Client[Ctx, R](schema: Schema[Ctx, R]) {
 
-  // TODO: Use kind projector plugin(?)
-  type EitherG[T] = Either[GraphqlCallError, T]
-
   def call(
       call:           GraphqlCall,
       argumentValues: Map[String, Any]
@@ -106,7 +103,7 @@ case class Client[Ctx, R](schema: Schema[Ctx, R]) {
             argumentValueToAstValue(argument, argumentValue).map(ast.Argument(argument.name, _))
         }
       }
-      .sequence[EitherG, ast.Argument]
+      .sequence[Either[GraphqlCallError, ?], ast.Argument]
       .map(argumentList => Vector(argumentList: _*))
   }
 
