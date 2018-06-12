@@ -3,8 +3,7 @@ package graphient
 import sangria.ast
 import sangria.schema._
 import cats.implicits._
-
-// TODO: Add stricter scalac flags
+import scala.reflect.ClassTag
 
 // TODO: Move these to separate files
 sealed trait GraphqlCall {
@@ -18,6 +17,7 @@ case class FieldNotFound(graphqlCall:          GraphqlCall) extends GraphqlCallE
 case class ArgumentNotFound[T](argument:       Argument[T]) extends GraphqlCallError
 case class UnsuportedArgumentType[T](argument: Argument[T]) extends GraphqlCallError
 case class UnsuportedOutputType[T](outputType: OutputType[T]) extends GraphqlCallError
+case class InvalidArgumentValue[T](argument:   Argument[T], value: Any) extends GraphqlCallError
 
 case class Client[C, T](schema: Schema[C, T]) {
 
@@ -107,10 +107,33 @@ case class Client[C, T](schema: Schema[C, T]) {
       .map(argumentList => Vector(argumentList: _*))
   }
 
+  case class ScalarArgument(argument: Argument[_], value: Any) {
+
+    private def castIfValid[S: ClassTag](value: Any): Option[S] = {
+      if (implicitly[ClassTag[S]].runtimeClass.isInstance(value)) {
+        Some(value.asInstanceOf[S])
+      } else {
+        None
+      }
+    }
+
+    def apply[A: ClassTag](wrapper: A => ast.Value): Either[GraphqlCallError, ast.Value] = {
+      castIfValid[A](value).fold {
+        Left(InvalidArgumentValue(argument, value)): Either[GraphqlCallError, ast.Value]
+      } { validValue =>
+        Right(wrapper(validValue)): Either[GraphqlCallError, ast.Value]
+      }
+    }
+  }
+
   private def argumentValueToAstValue(argument: Argument[_], value: Any): Either[GraphqlCallError, ast.Value] = {
     argument.argumentType match {
-      // TODO: THIS IS UNCHECKED => FIX THE CHECK SOMEHOW
-      case longValue: ScalarType[Long] => Right(ast.BigIntValue(BigInt(value.asInstanceOf[Long])))
+      case scalar: ScalarType[_] =>
+        val arg = ScalarArgument(argument, value)
+        scalar.name match {
+          // TODO: Why java.lang.Long necessary? erasure because of Any?
+          case "Long" => arg[java.lang.Long](x => ast.BigIntValue(BigInt(x)))
+        }
       case _ => Left(UnsuportedArgumentType(argument))
     }
   }
