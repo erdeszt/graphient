@@ -6,7 +6,7 @@ import cats.implicits._
 
 // TODO: Add stricter scalac flags
 
-// TODO: Move these to separaete files
+// TODO: Move these to separate files
 sealed trait GraphqlCall {
   val field: String
 }
@@ -19,18 +19,18 @@ case class ArgumentNotFound[T](argument:       Argument[T]) extends GraphqlCallE
 case class UnsuportedArgumentType[T](argument: Argument[T]) extends GraphqlCallError
 case class UnsuportedOutputType[T](outputType: OutputType[T]) extends GraphqlCallError
 
-case class Client[Ctx, R](schema: Schema[Ctx, R]) {
+case class Client[C, T](schema: Schema[C, T]) {
 
   def call(
       call:           GraphqlCall,
       argumentValues: Map[String, Any]
   ): Either[GraphqlCallError, ast.Document] = {
-    val (fields, operationType) = call match {
+    val (fieldLookup, operationType) = call match {
       case Query(_)    => (schema.query.fieldsByName, ast.OperationType.Query)
       case Mutation(_) => (schema.mutation.map(_.fieldsByName).getOrElse(Map()), ast.OperationType.Mutation)
     }
 
-    fields.get(call.field) match {
+    fieldLookup.get(call.field) match {
       case None                           => Left(FieldNotFound(call))
       case Some(fields) if fields.isEmpty => Left(FieldNotFound(call))
       case Some(fields)                   => generateGraphqlAst(operationType, fields.head, argumentValues)

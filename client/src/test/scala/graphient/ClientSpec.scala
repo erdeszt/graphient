@@ -1,6 +1,5 @@
 package graphient
 
-import TestSchema._
 import sangria.ast
 import org.scalatest._
 
