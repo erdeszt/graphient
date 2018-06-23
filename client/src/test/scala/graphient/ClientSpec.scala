@@ -2,6 +2,8 @@ package graphient
 
 import sangria.ast
 import org.scalatest._
+import graphient.Client
+import graphient.GraphqlCall._
 
 class ClientSpec extends FunSpec with Matchers {
   describe("graphient.Client") {
