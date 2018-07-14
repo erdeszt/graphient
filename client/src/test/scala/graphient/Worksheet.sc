@@ -1,8 +1,10 @@
 import graphient.GraphqlCall.{Mutation, Query}
 import graphient.TestSchema._
 import graphient._
+import sangria.ast
 import sangria.renderer._
 import sangria.execution._
+import sangria.marshalling.QueryAstInputUnmarshaller
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Await
@@ -10,6 +12,7 @@ import scala.concurrent.duration._
 
 val schema = TestSchema()
 val testClient = Client(schema)
+val clientV2 = ClientV2(schema)
 val query = testClient.call(Query("getUser"), Map("userId" -> 1L)).right.toOption.get
 val mutation = testClient.call(
   Mutation("createUser"),
@@ -31,3 +34,10 @@ Await.result(Executor.execute(schema, query, new UserRepo {
 }), 5 seconds)
 
 QueryRenderer.render(query)
+
+val unmarshaller = new QueryAstInputUnmarshaller()
+
+unmarshaller.render(ast.IntValue(1))
+unmarshaller.render(ast.ListValue(Vector(ast.StringValue("yo"))))
+
+QueryRenderer.render(clientV2.call(Query("getUser")).right.toOption.get)

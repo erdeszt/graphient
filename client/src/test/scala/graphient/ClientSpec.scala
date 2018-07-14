@@ -77,9 +77,7 @@ class ClientSpec extends FunSpec with Matchers {
 
     it("query execution should work") {
       val testUser = User(1L, s"User: 1", 26, List("coding", "debugging"))
-      val query = testClient.call(Query("getUser"), Map("userId" -> 1L)).getOrElse {
-        throw new Exception("Invalid query")
-      }
+      val query    = testClient.call(Query("getUser"), Map("userId" -> 1L)).right.toOption.get
       val testRepo = new UserRepo {
         def getUser(id: Long): Option[User] = {
           Some(testUser)
