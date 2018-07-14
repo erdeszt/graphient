@@ -4,6 +4,12 @@ import sangria.ast
 import org.scalatest._
 import graphient.Client
 import graphient.GraphqlCall._
+import graphient.TestSchema.{User, UserRepo}
+import sangria.execution.Executor
+
+import scala.concurrent.Await
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration._
 
 class ClientSpec extends FunSpec with Matchers {
   describe("graphient.Client") {
@@ -76,6 +82,31 @@ class ClientSpec extends FunSpec with Matchers {
       ageSelection.comments shouldBe empty
       ageSelection.trailingComments shouldBe empty
       ageSelection.location shouldBe empty
+    }
+
+    it("query execution should work") {
+      val query = testClient.call(Query("getUser"), Map("userId" -> 1L)).getOrElse {
+        throw new Exception("Invalid query")
+      }
+      val result = Await
+        .result(Executor.execute(TestSchema(), query, new UserRepo {
+          def getUser(id: Long): Option[User] = {
+            Some(User(id, s"User: $id", 25 + id.toInt))
+          }
+        }), 5 seconds)
+        .asInstanceOf[Map[String, Any]]
+
+      val data = result.get("data").asInstanceOf[Some[Map[String, Any]]]
+
+      data should not be empty
+
+      val getUser = data.get.get("getUser").asInstanceOf[Some[Map[String, Any]]]
+
+      getUser should not be empty
+
+      getUser.get.get("id") shouldBe Some(1L)
+      getUser.get.get("name") shouldBe Some("User: 1")
+      getUser.get.get("age") shouldBe Some(26)
     }
 
     it("should handle missing fields") {

@@ -11,7 +11,7 @@ object TestSchema {
   )
 
   trait UserRepo {
-    def getUser(id: Long): User
+    def getUser(id: Long): Option[User]
   }
 
   val UserType = ObjectType(
@@ -31,7 +31,7 @@ object TestSchema {
     fields[UserRepo, Unit](
       Field(
         "getUser",
-        UserType,
+        OptionType(UserType),
         arguments = UserId :: Nil,
         resolve   = request => request.ctx.getUser(request.args.arg(UserId))
       )

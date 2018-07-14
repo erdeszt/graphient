@@ -60,8 +60,11 @@ case class Client[C, T](schema: Schema[C, T]) {
 
   }
 
-  private def generateSelectionAst[Ctx, R](field: Field[Ctx, R]): Either[GraphqlCallError, Vector[ast.Selection]] = {
-    field.fieldType match {
+  // ?? inline?
+  private def generateOutputTypeAst[Ctx, R](
+      outputType: OutputType[R]
+  ): Either[GraphqlCallError, Vector[ast.Selection]] = {
+    outputType match {
       case obj: ObjectType[_, _] =>
         val selections = obj.fields.map { field =>
           ast.Field(
@@ -74,8 +77,16 @@ case class Client[C, T](schema: Schema[C, T]) {
         }
 
         Right(Vector(selections: _*))
-      case _ => Left(UnsuportedOutputType(field.fieldType))
+      case opt: OptionType[_] =>
+        generateOutputTypeAst(opt.ofType)
+      case _ => Left(UnsuportedOutputType(outputType))
     }
+  }
+
+  private def generateSelectionAst[Ctx, R](field: Field[Ctx, R]): Either[GraphqlCallError, Vector[ast.Selection]] = {
+    val selection = generateOutputTypeAst(field.fieldType)
+    // ???
+    selection
   }
 
   private def generateArgumentListAst[Ctx, R](
