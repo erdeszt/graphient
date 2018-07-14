@@ -47,53 +47,46 @@ class ClientSpec extends FunSpec with Matchers {
       getUserSelection.arguments.head.name should equal("userId")
       getUserSelection.arguments.head.value should equal(ast.BigIntValue(BigInt(1L)))
 
-      getUserSelection.selections should have length 3
+      getUserSelection.selections should have length 4
       getUserSelection.selections(0) shouldBe a[ast.Field]
       getUserSelection.selections(1) shouldBe a[ast.Field]
       getUserSelection.selections(2) shouldBe a[ast.Field]
+      getUserSelection.selections(3) shouldBe a[ast.Field]
 
-      val idSelection   = getUserSelection.selections(0).asInstanceOf[ast.Field]
-      val nameSelection = getUserSelection.selections(1).asInstanceOf[ast.Field]
-      val ageSelection  = getUserSelection.selections(2).asInstanceOf[ast.Field]
+      val idSelection      = getUserSelection.selections(0).asInstanceOf[ast.Field]
+      val nameSelection    = getUserSelection.selections(1).asInstanceOf[ast.Field]
+      val ageSelection     = getUserSelection.selections(2).asInstanceOf[ast.Field]
+      val hobbiesSelection = getUserSelection.selections(3).asInstanceOf[ast.Field]
 
-      idSelection.alias shouldBe empty
-      idSelection.name should equal("id")
-      idSelection.arguments shouldBe empty
-      idSelection.directives shouldBe empty
-      idSelection.selections shouldBe empty
-      idSelection.comments shouldBe empty
-      idSelection.trailingComments shouldBe empty
-      idSelection.location shouldBe empty
+      val validateFieldSelection = (fieldSelection: ast.Field, name: String) => {
+        fieldSelection.alias shouldBe empty
+        fieldSelection.name should equal(name)
+        fieldSelection.arguments shouldBe empty
+        fieldSelection.directives shouldBe empty
+        fieldSelection.selections shouldBe empty
+        fieldSelection.comments shouldBe empty
+        fieldSelection.trailingComments shouldBe empty
+        fieldSelection.location shouldBe empty
+      }
 
-      nameSelection.alias shouldBe empty
-      nameSelection.name should equal("name")
-      nameSelection.arguments shouldBe empty
-      nameSelection.directives shouldBe empty
-      nameSelection.selections shouldBe empty
-      nameSelection.comments shouldBe empty
-      nameSelection.trailingComments shouldBe empty
-      nameSelection.location shouldBe empty
-
-      ageSelection.alias shouldBe empty
-      ageSelection.name should equal("age")
-      ageSelection.arguments shouldBe empty
-      ageSelection.directives shouldBe empty
-      ageSelection.selections shouldBe empty
-      ageSelection.comments shouldBe empty
-      ageSelection.trailingComments shouldBe empty
-      ageSelection.location shouldBe empty
+      validateFieldSelection(idSelection, "id")
+      validateFieldSelection(nameSelection, "name")
+      validateFieldSelection(ageSelection, "age")
+      validateFieldSelection(hobbiesSelection, "hobbies")
     }
 
     it("query execution should work") {
+      val testUser = User(1L, s"User: 1", 26, List("coding", "debugging"))
       val query = testClient.call(Query("getUser"), Map("userId" -> 1L)).getOrElse {
         throw new Exception("Invalid query")
       }
+      val testRepo = new UserRepo {
+        def getUser(id: Long): Option[User] = {
+          Some(testUser)
+        }
+      }
       val result = Await
-        .result(Executor.execute(TestSchema(), query, new UserRepo {
-          def getUser(id: Long): Option[User] = {
-            Some(User(id, s"User: $id", 25 + id.toInt))
-          }
-        }), 5 seconds)
+        .result(Executor.execute(TestSchema(), query, testRepo), 5 seconds)
         .asInstanceOf[Map[String, Any]]
 
       val data = result.get("data").asInstanceOf[Some[Map[String, Any]]]
@@ -104,9 +97,10 @@ class ClientSpec extends FunSpec with Matchers {
 
       getUser should not be empty
 
-      getUser.get.get("id") shouldBe Some(1L)
-      getUser.get.get("name") shouldBe Some("User: 1")
-      getUser.get.get("age") shouldBe Some(26)
+      getUser.get.get("id") shouldBe Some(testUser.id)
+      getUser.get.get("name") shouldBe Some(testUser.name)
+      getUser.get.get("age") shouldBe Some(testUser.age)
+      getUser.get.get("hobbies") shouldBe Some(testUser.hobbies)
     }
 
     it("should handle missing fields") {

@@ -5,9 +5,10 @@ import sangria.schema._
 object TestSchema {
 
   case class User(
-      id:   Long,
-      name: String,
-      age:  Int
+      id:      Long,
+      name:    String,
+      age:     Int,
+      hobbies: List[String]
   )
 
   trait UserRepo {
@@ -18,9 +19,10 @@ object TestSchema {
     "User",
     "User desc...",
     fields[Unit, User](
-      Field("id", LongType, resolve     = _.value.id),
-      Field("name", StringType, resolve = _.value.name),
-      Field("age", IntType, resolve     = _.value.age)
+      Field("id", LongType, resolve                  = _.value.id),
+      Field("name", StringType, resolve              = _.value.name),
+      Field("age", IntType, resolve                  = _.value.age),
+      Field("hobbies", ListType(StringType), resolve = _.value.hobbies)
     )
   )
 

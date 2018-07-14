@@ -60,7 +60,6 @@ case class Client[C, T](schema: Schema[C, T]) {
 
   }
 
-  // ?? inline?
   private def generateOutputTypeAst[Ctx, R](
       outputType: OutputType[R]
   ): Either[GraphqlCallError, Vector[ast.Selection]] = {
@@ -84,9 +83,7 @@ case class Client[C, T](schema: Schema[C, T]) {
   }
 
   private def generateSelectionAst[Ctx, R](field: Field[Ctx, R]): Either[GraphqlCallError, Vector[ast.Selection]] = {
-    val selection = generateOutputTypeAst(field.fieldType)
-    // ???
-    selection
+    generateOutputTypeAst(field.fieldType)
   }
 
   private def generateArgumentListAst[Ctx, R](

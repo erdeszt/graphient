@@ -13,7 +13,7 @@ val query = testClient.call(Query("getUser"), Map("userId" -> 1L)).getOrElse(thr
 
 Await.result(Executor.execute(schema, query, new UserRepo {
   override def getUser(id: Long) = {
-    Some(User(id, s"User: $id", 25 + id.toInt))
+    Some(User(id, s"User: $id", 25 + id.toInt, List("coding", "debugging")))
   }
 }), 5 seconds)
 
