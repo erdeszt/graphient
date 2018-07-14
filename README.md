@@ -1,0 +1,1 @@
+## GraphQL client for Sangria schemas WIP
