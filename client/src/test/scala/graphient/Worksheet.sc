@@ -37,7 +37,12 @@ QueryRenderer.render(query)
 
 val unmarshaller = new QueryAstInputUnmarshaller()
 
-unmarshaller.render(ast.IntValue(1))
-unmarshaller.render(ast.ListValue(Vector(ast.StringValue("yo"))))
+unmarshaller.render(ast.StringValue("test user"))
+unmarshaller.render(ast.ObjectValue(
+  ("name", ast.StringValue("test user")),
+  ("age", ast.IntValue(26)),
+  ("hobbies", ast.ListValue(Vector(ast.StringValue("coding"), ast.StringValue("debugging"))))
+))
 
 QueryRenderer.render(clientV2.call(Query("getUser")).right.toOption.get)
+QueryRenderer.render(clientV2.call(Mutation("createUser")).right.toOption.get)
