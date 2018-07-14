@@ -84,6 +84,7 @@ class ClientSpec extends FunSpec with Matchers {
         def getUser(id: Long): Option[User] = {
           Some(testUser)
         }
+        def createUser(name: String, age: Int, hobbies: List[String]): User = ???
       }
       val result = Await
         .result(Executor.execute(TestSchema(), query, testRepo), 5 seconds)
@@ -116,6 +117,61 @@ class ClientSpec extends FunSpec with Matchers {
       result should be('left)
       result.left.toOption.get shouldBe a[ArgumentNotFound[_]]
       result.left.toOption.get.asInstanceOf[ArgumentNotFound[_]].argument.name should equal("userId")
+    }
+
+    it("should create valid mutations") {
+      val mutation = testClient.call(
+        Mutation("createUser"),
+        Map(
+          "name"    -> "test user",
+          "age"     -> 21,
+          "hobbies" -> List("coding", "debugging")
+        )
+      )
+
+      mutation should be('right)
+
+      // TODO: Assert ast shape
+    }
+
+    it("mutation execution should work") {
+      val testUserName    = "test user"
+      val testUserAge     = 26
+      val testUserHobbies = List("coding", "debugging")
+      val mutation = testClient
+        .call(
+          Mutation("createUser"),
+          Map(
+            "name"    -> testUserName,
+            "age"     -> testUserAge,
+            "hobbies" -> testUserHobbies
+          )
+        )
+        .getOrElse {
+          throw new Exception("Invalid query")
+        }
+      val testRepo = new UserRepo {
+        def getUser(id:      Long): Option[User] = None
+        def createUser(name: String, age: Int, hobbies: List[String]): User = {
+          User(1L, name, age, hobbies)
+        }
+      }
+      val result = Await
+        .result(Executor.execute(TestSchema(), mutation, testRepo), 5 seconds)
+        .asInstanceOf[Map[String, Any]]
+
+      val data = result.get("data").asInstanceOf[Some[Map[String, Any]]]
+
+      data should not be empty
+
+      val createUser = data.get.get("createUser").asInstanceOf[Some[Map[String, Any]]]
+
+      createUser should not be empty
+
+      createUser.get.get("id") shouldBe Some(1L)
+      createUser.get.get("name") shouldBe Some(testUserName)
+      createUser.get.get("age") shouldBe Some(testUserAge)
+      createUser.get.get("hobbies") shouldBe Some(testUserHobbies)
     }
   }
 }

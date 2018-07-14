@@ -121,16 +121,35 @@ case class Client[C, T](schema: Schema[C, T]) {
     }
   }
 
-  private def argumentValueToAstValue(argument: Argument[_], value: Any): Either[GraphqlCallError, ast.Value] = {
-    argument.argumentType match {
+  private def argumentTypeValueToAstValue(
+      argument:   Argument[_],
+      outputType: InputType[_],
+      value:      Any
+  ): Either[GraphqlCallError, ast.Value] = {
+    outputType match {
       case scalar: ScalarType[_] =>
         val arg = ScalarArgument(argument, value)
         scalar.name match {
           // TODO: Why java.lang.Long necessary? erasure because of Any?
-          case "Long" => arg[java.lang.Long](x => ast.BigIntValue(BigInt(x)))
+          case "Long"   => arg[java.lang.Long](x    => ast.BigIntValue(BigInt(x)))
+          case "String" => arg[java.lang.String](x  => ast.StringValue(x))
+          case "Int"    => arg[java.lang.Integer](x => ast.IntValue(x))
         }
+      case list: ListInputType[_] =>
+        value
+          .asInstanceOf[Seq[_]]
+          .map { item =>
+            argumentTypeValueToAstValue(argument, list.ofType, item)
+          }
+          .toList
+          .sequence[Either[GraphqlCallError, ?], ast.Value]
+          .map(values => ast.ListValue(values.toVector))
       case _ => Left(UnsuportedArgumentType(argument))
     }
+  }
+
+  private def argumentValueToAstValue(argument: Argument[_], value: Any): Either[GraphqlCallError, ast.Value] = {
+    argumentTypeValueToAstValue(argument, argument.argumentType, value)
   }
 
 }
