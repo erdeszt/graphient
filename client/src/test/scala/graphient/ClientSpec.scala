@@ -14,21 +14,6 @@ class ClientSpec extends FunSpec with Matchers {
   describe("graphient.Client") {
     val oldtestClient = OldClient(TestSchema.schema)
 
-    it("should handle missing fields") {
-      val result = oldtestClient.call(Query("missingField"), Map())
-
-      result should be('left)
-      result.left.toOption.get should equal(FieldNotFound(Query("missingField")))
-    }
-
-    it("should handle missing arguments") {
-      val result = oldtestClient.call(Query("getUser"), Map())
-
-      result should be('left)
-      result.left.toOption.get shouldBe a[ArgumentNotFound[_]]
-      result.left.toOption.get.asInstanceOf[ArgumentNotFound[_]].argument.name should equal("userId")
-    }
-
     it("mutation execution should work") {
       val testUserName    = "test user"
       val testUserAge     = 26

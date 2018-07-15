@@ -68,6 +68,14 @@ class VariableGeneratorSpec extends FunSpec with Matchers {
       hobbiesVariable.value.asInstanceOf[ast.ListValue].values.toList shouldBe testUserHobbies.map(ast.StringValue(_))
     }
 
+    ignore("should handle missing arguments") {
+      fail("WIP")
+    }
+
+    ignore("should handle invalid arguments") {
+      fail("WIP")
+    }
+
   }
 
 }

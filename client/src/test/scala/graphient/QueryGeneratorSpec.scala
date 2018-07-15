@@ -10,6 +10,15 @@ class QueryGeneratorSpec extends FunSpec with Matchers {
 
   describe("QueryGenerator") {
 
+    // TODO: Rename v1/v2 to something more meaningful
+    describe("V1 api") {
+
+      ignore("should handle missing fields") {
+        fail("WIP")
+      }
+
+    }
+
     describe("V2 api") {
 
       it("should generate a valid query ast for queries") {
