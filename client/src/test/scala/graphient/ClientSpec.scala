@@ -2,10 +2,11 @@ package graphient
 
 import sangria.ast
 import org.scalatest._
-import graphient.Client
+import graphient.ClientV2._
 import graphient.GraphqlCall._
 import graphient.TestSchema.{User, UserRepo}
 import sangria.execution.Executor
+import sangria.marshalling.QueryAstInputUnmarshaller
 
 import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -170,6 +171,52 @@ class ClientSpec extends FunSpec with Matchers {
       createUser.get.get("name") shouldBe Some(testUserName)
       createUser.get.get("age") shouldBe Some(testUserAge)
       createUser.get.get("hobbies") shouldBe Some(testUserHobbies)
+    }
+
+    it("V2 example") {
+      val queryGenerator    = QueryGenerator(TestSchema())
+      val variableGenerator = VariableGenerator(TestSchema())
+      val createUserQuery   = queryGenerator.generateQuery(Mutation("createUser")).right.toOption.get
+      val createUserVariables = variableGenerator
+        .generateVariables(
+          Mutation("createUser"),
+          Map(
+            "name"    -> "test user",
+            "age"     -> 26,
+            "hobbies" -> List("coding", "debugging")
+          )
+        )
+        .right
+        .toOption
+        .get
+      val testRepo = new UserRepo {
+        def getUser(id:      Long): Option[User] = None
+        def createUser(name: String, age: Int, hobbies: List[String]): User = {
+          User(1L, name, age, hobbies)
+        }
+      }
+      implicit val queryAstInputUnmarshaller: QueryAstInputUnmarshaller = new QueryAstInputUnmarshaller()
+      val asyncResult = Executor.execute(
+        TestSchema(),
+        createUserQuery,
+        testRepo,
+        variables = createUserVariables
+      )
+      val result = Await.result(asyncResult, 5 seconds).asInstanceOf[Map[String, Any]]
+
+      val data = result.get("data").asInstanceOf[Some[Map[String, Any]]]
+
+      data should not be empty
+
+      val createUser = data.get.get("createUser").asInstanceOf[Some[Map[String, Any]]]
+
+      createUser should not be empty
+
+      createUser.get.get("id") shouldBe Some(1L)
+      createUser.get.get("name") shouldBe Some("test user")
+      createUser.get.get("age") shouldBe Some(26)
+      createUser.get.get("hobbies") shouldBe Some(List("coding", "debugging"))
+
     }
   }
 }

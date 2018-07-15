@@ -14,14 +14,19 @@ import scala.concurrent.duration._
 val schema = TestSchema()
 val testClient = Client(schema)
 val queryGenerator = QueryGenerator(schema)
-val query = testClient.call(Query("getUser"), Map("userId" -> 1L)).right.toOption.get
+val variableGenerator = VariableGenerator(schema)
+val getUserCall = Query("getUser")
+val getUserCallArguments = Map("userId" -> 1L)
+val query = testClient.call(getUserCall, getUserCallArguments).right.toOption.get
+val createUserCall = Mutation("createUser")
+val createUserCallArguments = Map(
+  "name" -> "test user",
+  "age" -> 26,
+  "hobbies" -> List("coding", "debugging")
+)
 val mutation = testClient.call(
-  Mutation("createUser"),
-  Map(
-    "name" -> "test user",
-    "age" -> 26,
-    "hobbies" -> List("coding", "debugging")
-  )
+  createUserCall,
+  createUserCallArguments
 ).right.toOption.get
 
 Await.result(Executor.execute(schema, query, new UserRepo {
@@ -45,5 +50,12 @@ unmarshaller.render(ast.ObjectValue(
   ("hobbies", ast.ListValue(Vector(ast.StringValue("coding"), ast.StringValue("debugging"))))
 ))
 
+unmarshaller.render(
+  variableGenerator.generateVariables(getUserCall, getUserCallArguments).right.toOption.get
+)
+unmarshaller.render(
+  variableGenerator.generateVariables(createUserCall, createUserCallArguments).right.toOption.get
+)
+
 QueryRenderer.render(queryGenerator.generateQuery(Query("getUser")).right.toOption.get)
-QueryRenderer.render(queryGenerator.generateQuery(Mutation("createUser")).right.toOption.get)
+QueryRenderer.render(queryGenerator.generateQuery(createUserCall).right.toOption.get)
