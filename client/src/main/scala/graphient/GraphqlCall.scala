@@ -11,10 +11,8 @@ object GraphqlCall {
   case class Mutation(field: String) extends GraphqlCall
 
   sealed trait GraphqlCallError
-  case class FieldNotFound(graphqlCall:          GraphqlCall) extends GraphqlCallError
-  case class ArgumentNotFound[T](argument:       Argument[T]) extends GraphqlCallError
-  case class UnsuportedArgumentType[T](argument: Argument[T]) extends GraphqlCallError
-  case class UnsuportedOutputType[T](outputType: OutputType[T]) extends GraphqlCallError
-  case class InvalidArgumentValue[T](argument:   Argument[T], value: Any) extends GraphqlCallError
+  case class FieldNotFound(graphqlCall:        GraphqlCall) extends GraphqlCallError
+  case class ArgumentNotFound[T](argument:     Argument[T]) extends GraphqlCallError
+  case class InvalidArgumentValue[T](argument: Argument[T], value: Any) extends GraphqlCallError
 
 }

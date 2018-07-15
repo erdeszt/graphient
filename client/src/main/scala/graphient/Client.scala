@@ -78,7 +78,7 @@ case class Client[C, T](schema: Schema[C, T]) {
         Right(Vector(selections: _*))
       case opt: OptionType[_] =>
         generateOutputTypeAst(opt.ofType)
-      case _ => Left(UnsuportedOutputType(outputType))
+      case _ => throw new Exception("WIP Unsupported output type")
     }
   }
 
@@ -144,7 +144,7 @@ case class Client[C, T](schema: Schema[C, T]) {
           .toList
           .sequence[Either[GraphqlCallError, ?], ast.Value]
           .map(values => ast.ListValue(values.toVector))
-      case _ => Left(UnsuportedArgumentType(argument))
+      case _ => throw new Exception("WIP Unsupported argument type")
     }
   }
 
