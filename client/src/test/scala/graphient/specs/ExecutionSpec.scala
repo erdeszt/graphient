@@ -12,11 +12,11 @@ import scala.concurrent.duration._
 
 class ExecutionSpec extends FunSpec with Matchers {
 
-  implicit val queryAstInputUnmarshaller: QueryAstInputUnmarshaller = new QueryAstInputUnmarshaller()
-  val queryGenerator    = QueryGenerator(TestSchema.schema)
-  val variableGenerator = VariableGenerator(TestSchema.schema)
-  val defaultUser       = User(1L, "default", 42, List("coding"))
-  val newUserId         = 2L
+  private implicit val queryAstInputUnmarshaller: QueryAstInputUnmarshaller = new QueryAstInputUnmarshaller()
+  private val queryGenerator    = QueryGenerator(TestSchema.schema)
+  private val variableGenerator = VariableGenerator(TestSchema.schema)
+  private val defaultUser       = User(1L, "default", 42, List("coding"))
+  private val newUserId         = 2L
 
   object TestUserRepo extends UserRepo {
     override def getUser(id: Long): Option[User] = {

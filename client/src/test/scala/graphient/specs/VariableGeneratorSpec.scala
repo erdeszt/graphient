@@ -7,7 +7,7 @@ import sangria.ast
 
 class VariableGeneratorSpec extends FunSpec with Matchers {
 
-  val variableGenerator = new VariableGenerator[UserRepo, Unit](TestSchema.schema)
+  private val variableGenerator = new VariableGenerator[UserRepo, Unit](TestSchema.schema)
 
   describe("VariableGenerator") {
 
