@@ -1,7 +1,5 @@
-import graphient.GraphqlCall.{Mutation, Query}
-import graphient.TestSchema._
 import graphient._
-import graphient.ClientV2._
+import graphient.TestSchema.Domain._
 import sangria.ast
 import sangria.renderer._
 import sangria.execution._
@@ -11,10 +9,9 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-val schema = TestSchema()
-val testClient = Client(schema)
-val queryGenerator = QueryGenerator(schema)
-val variableGenerator = VariableGenerator(schema)
+val testClient = OldClient(TestSchema.schema)
+val queryGenerator = QueryGenerator(TestSchema.schema)
+val variableGenerator = VariableGenerator(TestSchema.schema)
 val getUserCall = Query("getUser")
 val getUserCallArguments = Map("userId" -> 1L)
 val query = testClient.call(getUserCall, getUserCallArguments).right.toOption.get
@@ -29,7 +26,7 @@ val mutation = testClient.call(
   createUserCallArguments
 ).right.toOption.get
 
-Await.result(Executor.execute(schema, query, new UserRepo {
+Await.result(Executor.execute(TestSchema.schema, query, new UserRepo {
   override def getUser(id: Long) = {
     Some(User(id, s"User: $id", 25 + id.toInt, List("coding", "debugging")))
   }

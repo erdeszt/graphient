@@ -1,10 +1,8 @@
 package graphient
 
-import sangria.ast
+import TestSchema.Domain._
 import org.scalatest._
-import graphient.ClientV2._
-import graphient.GraphqlCall._
-import graphient.TestSchema.{User, UserRepo}
+import sangria.ast
 import sangria.execution.Executor
 import sangria.marshalling.QueryAstInputUnmarshaller
 
@@ -14,7 +12,7 @@ import scala.concurrent.duration._
 
 class ClientSpec extends FunSpec with Matchers {
   describe("graphient.Client") {
-    val testClient = Client(TestSchema())
+    val testClient = OldClient(TestSchema.schema)
 
     it("should generate an ast for a valid request") {
       val queryAst = testClient.call(Query("getUser"), Map("userId" -> 1L))
@@ -86,7 +84,7 @@ class ClientSpec extends FunSpec with Matchers {
         def createUser(name: String, age: Int, hobbies: List[String]): User = ???
       }
       val result = Await
-        .result(Executor.execute(TestSchema(), query, testRepo), 5 seconds)
+        .result(Executor.execute(TestSchema.schema, query, testRepo), 5 seconds)
         .asInstanceOf[Map[String, Any]]
 
       val data = result.get("data").asInstanceOf[Some[Map[String, Any]]]
@@ -156,7 +154,7 @@ class ClientSpec extends FunSpec with Matchers {
         }
       }
       val result = Await
-        .result(Executor.execute(TestSchema(), mutation, testRepo), 5 seconds)
+        .result(Executor.execute(TestSchema.schema, mutation, testRepo), 5 seconds)
         .asInstanceOf[Map[String, Any]]
 
       val data = result.get("data").asInstanceOf[Some[Map[String, Any]]]
@@ -174,8 +172,8 @@ class ClientSpec extends FunSpec with Matchers {
     }
 
     it("V2 example") {
-      val queryGenerator    = QueryGenerator(TestSchema())
-      val variableGenerator = VariableGenerator(TestSchema())
+      val queryGenerator    = QueryGenerator(TestSchema.schema)
+      val variableGenerator = VariableGenerator(TestSchema.schema)
       val createUserQuery   = queryGenerator.generateQuery(Mutation("createUser")).right.toOption.get
       val createUserVariables = variableGenerator
         .generateVariables(
@@ -197,7 +195,7 @@ class ClientSpec extends FunSpec with Matchers {
       }
       implicit val queryAstInputUnmarshaller: QueryAstInputUnmarshaller = new QueryAstInputUnmarshaller()
       val asyncResult = Executor.execute(
-        TestSchema(),
+        TestSchema.schema,
         createUserQuery,
         testRepo,
         variables = createUserVariables
@@ -220,12 +218,12 @@ class ClientSpec extends FunSpec with Matchers {
     }
 
     it("V2 with V2 call example") {
-      val queryGenerator    = QueryGenerator(TestSchema())
-      val variableGenerator = VariableGenerator(TestSchema())
-      val createUserQuery   = queryGenerator.generateQuery(MutationV2(TestSchema.createUser))
+      val queryGenerator    = QueryGenerator(TestSchema.schema)
+      val variableGenerator = VariableGenerator(TestSchema.schema)
+      val createUserQuery   = queryGenerator.generateQuery(MutationV2(TestSchema.Mutations.createUser))
       val createUserVariables = variableGenerator
         .generateVariables(
-          TestSchema.createUser,
+          TestSchema.Mutations.createUser,
           Map(
             "name"    -> "test user",
             "age"     -> 26,
@@ -243,7 +241,7 @@ class ClientSpec extends FunSpec with Matchers {
       }
       implicit val queryAstInputUnmarshaller: QueryAstInputUnmarshaller = new QueryAstInputUnmarshaller()
       val asyncResult = Executor.execute(
-        TestSchema(),
+        TestSchema.schema,
         createUserQuery,
         testRepo,
         variables = createUserVariables
