@@ -6,8 +6,9 @@ import sangria.validation.QueryValidator
 
 class QueryGeneratorSpec extends FunSpec with Matchers {
 
+  val queryGenerator = QueryGenerator[UserRepo, Unit](TestSchema.schema)
+
   describe("QueryGenerator") {
-    val queryGenerator = QueryGenerator[UserRepo, Unit](TestSchema.schema)
 
     describe("V2 api") {
 
