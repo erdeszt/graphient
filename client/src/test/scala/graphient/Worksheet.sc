@@ -12,10 +12,10 @@ import scala.concurrent.duration._
 val testClient = OldClient(TestSchema.schema)
 val queryGenerator = QueryGenerator(TestSchema.schema)
 val variableGenerator = VariableGenerator(TestSchema.schema)
-val getUserCall = Query("getUser")
+val getUserCall = QueryByName("getUser")
 val getUserCallArguments = Map("userId" -> 1L)
 val query = testClient.call(getUserCall, getUserCallArguments).right.toOption.get
-val createUserCall = Mutation("createUser")
+val createUserCall = MutationByName("createUser")
 val createUserCallArguments = Map(
   "name" -> "test user",
   "age" -> 26,
@@ -54,5 +54,5 @@ unmarshaller.render(
   variableGenerator.generateVariables(createUserCall, createUserCallArguments).right.toOption.get
 )
 
-QueryRenderer.render(queryGenerator.generateQuery(Query("getUser")).right.toOption.get)
+QueryRenderer.render(queryGenerator.generateQuery(QueryByName("getUser")).right.toOption.get)
 QueryRenderer.render(queryGenerator.generateQuery(createUserCall).right.toOption.get)

@@ -1,22 +1,22 @@
 import sangria.schema.{Argument, Field}
 
-package object graphient {
+package graphient {
 
-  sealed trait GraphqlCall {
+  sealed trait NamedGraphqlCall {
     val field: String
   }
-  case class Query(field:    String) extends GraphqlCall
-  case class Mutation(field: String) extends GraphqlCall
+  case class QueryByName(field:    String) extends NamedGraphqlCall
+  case class MutationByName(field: String) extends NamedGraphqlCall
 
   sealed trait GraphqlCallError
-  case class FieldNotFound(graphqlCall:        GraphqlCall) extends GraphqlCallError
+  case class FieldNotFound(graphqlCall:        NamedGraphqlCall) extends GraphqlCallError
   case class ArgumentNotFound[T](argument:     Argument[T]) extends GraphqlCallError
   case class InvalidArgumentValue[T](argument: Argument[T], value: Any) extends GraphqlCallError
 
-  sealed trait GraphqlCallV2[Ctx, T] {
+  sealed trait GraphqlCall[Ctx, T] {
     val field: Field[Ctx, T]
   }
-  case class QueryV2[Ctx, T](field:    Field[Ctx, T]) extends GraphqlCallV2[Ctx, T]
-  case class MutationV2[Ctx, T](field: Field[Ctx, T]) extends GraphqlCallV2[Ctx, T]
+  case class Query[Ctx, T](field:    Field[Ctx, T]) extends GraphqlCall[Ctx, T]
+  case class Mutation[Ctx, T](field: Field[Ctx, T]) extends GraphqlCall[Ctx, T]
 
 }

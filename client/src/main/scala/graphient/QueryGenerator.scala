@@ -6,19 +6,19 @@ import sangria.schema._
 // TODO: Using the V2 api it's possible to mutation fields wrapped in Query which will result in an invalid query
 case class QueryGenerator[C, R](schema: Schema[C, R]) extends FieldLookup {
 
-  def generateQuery(call: GraphqlCall): Either[GraphqlCallError, ast.Document] = {
+  def generateQuery(call: NamedGraphqlCall): Either[GraphqlCallError, ast.Document] = {
     getField(schema, call).map { field =>
       call match {
-        case Query(_)    => generateQuery(QueryV2(field))
-        case Mutation(_) => generateQuery(MutationV2(field))
+        case QueryByName(_)    => generateQuery(Query(field))
+        case MutationByName(_) => generateQuery(Mutation(field))
       }
     }
   }
 
-  def generateQuery[Ctx, T](call: GraphqlCallV2[Ctx, T]): ast.Document = {
+  def generateQuery[Ctx, T](call: GraphqlCall[Ctx, T]): ast.Document = {
     val (field, operationType) = call match {
-      case QueryV2(f)    => (f, ast.OperationType.Query)
-      case MutationV2(f) => (f, ast.OperationType.Mutation)
+      case Query(f)    => (f, ast.OperationType.Query)
+      case Mutation(f) => (f, ast.OperationType.Mutation)
     }
     val (argumentsAst, variableAst) = generateArgumentListAst(field.arguments).unzip
     val selectionAst                = generateSelectionAst(field.fieldType)

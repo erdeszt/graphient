@@ -22,14 +22,14 @@ class QueryGeneratorSpec extends FunSpec with Matchers {
     describe("V2 api") {
 
       it("should generate a valid query ast for queries") {
-        val queryAst   = queryGenerator.generateQuery(QueryV2(TestSchema.Queries.getUser))
+        val queryAst   = queryGenerator.generateQuery(Query(TestSchema.Queries.getUser))
         val violations = QueryValidator.default.validateQuery(TestSchema.schema, queryAst)
 
         violations shouldBe empty
       }
 
       it("should generate a valid query ast for mutations") {
-        val queryAst   = queryGenerator.generateQuery(MutationV2(TestSchema.Mutations.createUser))
+        val queryAst   = queryGenerator.generateQuery(Mutation(TestSchema.Mutations.createUser))
         val violations = QueryValidator.default.validateQuery(TestSchema.schema, queryAst)
 
         violations shouldBe empty
@@ -37,7 +37,7 @@ class QueryGeneratorSpec extends FunSpec with Matchers {
 
       ignore("should not allow queries to be called as mutations") {
         intercept {
-          queryGenerator.generateQuery(QueryV2(TestSchema.Mutations.createUser))
+          queryGenerator.generateQuery(Query(TestSchema.Mutations.createUser))
         }
       }
 

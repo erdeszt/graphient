@@ -4,10 +4,10 @@ import sangria.schema._
 
 trait FieldLookup {
 
-  def getField[Ctx](schema: Schema[Ctx, _], call: GraphqlCall): Either[GraphqlCallError, Field[Ctx, _]] = {
+  def getField[Ctx](schema: Schema[Ctx, _], call: NamedGraphqlCall): Either[GraphqlCallError, Field[Ctx, _]] = {
     val fieldLookup = call match {
-      case Query(_)    => schema.query.fieldsByName
-      case Mutation(_) => schema.mutation.map(_.fieldsByName).getOrElse(Map())
+      case QueryByName(_)    => schema.query.fieldsByName
+      case MutationByName(_) => schema.mutation.map(_.fieldsByName).getOrElse(Map())
     }
 
     fieldLookup.get(call.field) match {

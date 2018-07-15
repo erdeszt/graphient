@@ -73,12 +73,13 @@ case class VariableGenerator[C, R](schema: Schema[C, R]) extends FieldLookup {
       .map(fields => ast.ObjectValue(fields: _*))
   }
 
-  def generateVariables(call: GraphqlCall, variableValues: Map[String, Any]): Either[GraphqlCallError, ast.Value] = {
+  def generateVariables(call:           NamedGraphqlCall,
+                        variableValues: Map[String, Any]): Either[GraphqlCallError, ast.Value] = {
     getField(schema, call).flatMap(generateVariables(_, variableValues))
   }
 
   def generateVariables[Ctx, T](
-      call:           GraphqlCallV2[Ctx, T],
+      call:           GraphqlCall[Ctx, T],
       variableValues: Map[String, Any]
   ): Either[GraphqlCallError, ast.Value] = {
     generateVariables(call.field, variableValues)

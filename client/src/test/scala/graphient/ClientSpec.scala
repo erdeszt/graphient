@@ -2,7 +2,6 @@ package graphient
 
 import TestSchema.Domain._
 import org.scalatest._
-import sangria.ast
 import sangria.execution.Executor
 import sangria.marshalling.QueryAstInputUnmarshaller
 
@@ -20,7 +19,7 @@ class ClientSpec extends FunSpec with Matchers {
       val testUserHobbies = List("coding", "debugging")
       val mutation = oldtestClient
         .call(
-          Mutation("createUser"),
+          MutationByName("createUser"),
           Map(
             "name"    -> testUserName,
             "age"     -> testUserAge,
@@ -57,10 +56,10 @@ class ClientSpec extends FunSpec with Matchers {
     it("V2 example") {
       val queryGenerator    = QueryGenerator(TestSchema.schema)
       val variableGenerator = VariableGenerator(TestSchema.schema)
-      val createUserQuery   = queryGenerator.generateQuery(Mutation("createUser")).right.toOption.get
+      val createUserQuery   = queryGenerator.generateQuery(MutationByName("createUser")).right.toOption.get
       val createUserVariables = variableGenerator
         .generateVariables(
-          Mutation("createUser"),
+          MutationByName("createUser"),
           Map(
             "name"    -> "test user",
             "age"     -> 26,
@@ -103,7 +102,7 @@ class ClientSpec extends FunSpec with Matchers {
     it("V2 with V2 call example") {
       val queryGenerator    = QueryGenerator(TestSchema.schema)
       val variableGenerator = VariableGenerator(TestSchema.schema)
-      val createUserQuery   = queryGenerator.generateQuery(MutationV2(TestSchema.Mutations.createUser))
+      val createUserQuery   = queryGenerator.generateQuery(Mutation(TestSchema.Mutations.createUser))
       val createUserVariables = variableGenerator
         .generateVariables(
           TestSchema.Mutations.createUser,

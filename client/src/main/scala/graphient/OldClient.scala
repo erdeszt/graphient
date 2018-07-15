@@ -8,12 +8,12 @@ import scala.reflect.ClassTag
 case class OldClient[C, T](schema: Schema[C, T]) {
 
   def call(
-      call:           GraphqlCall,
+      call:           NamedGraphqlCall,
       argumentValues: Map[String, Any]
   ): Either[GraphqlCallError, ast.Document] = {
     val (fieldLookup, operationType) = call match {
-      case Query(_)    => (schema.query.fieldsByName, ast.OperationType.Query)
-      case Mutation(_) => (schema.mutation.map(_.fieldsByName).getOrElse(Map()), ast.OperationType.Mutation)
+      case QueryByName(_)    => (schema.query.fieldsByName, ast.OperationType.Query)
+      case MutationByName(_) => (schema.mutation.map(_.fieldsByName).getOrElse(Map()), ast.OperationType.Mutation)
     }
 
     fieldLookup.get(call.field) match {
