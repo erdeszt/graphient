@@ -4,9 +4,8 @@ import sangria.ast
 import sangria.schema._
 import cats.implicits._
 import scala.reflect.ClassTag
-import graphient.GraphqlCall._
 
-case class Client[C, T](schema: Schema[C, T]) {
+case class OldClient[C, T](schema: Schema[C, T]) {
 
   def call(
       call:           GraphqlCall,
