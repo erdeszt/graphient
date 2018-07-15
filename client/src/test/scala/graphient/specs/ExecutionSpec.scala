@@ -1,13 +1,14 @@
-package graphient
+package graphient.specs
 
 import graphient.TestSchema.Domain._
+import graphient._
 import org.scalatest._
 import sangria.execution.Executor
 import sangria.marshalling.QueryAstInputUnmarshaller
 
 import scala.concurrent.Await
-import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration._
 
 class ExecutionSpec extends FunSpec with Matchers {
 
@@ -34,7 +35,7 @@ class ExecutionSpec extends FunSpec with Matchers {
   describe("Local query execution with mock service") {
 
     it("should execute queries successfully") {
-      val query = queryGenerator.generateQuery(Query(TestSchema.Queries.getUser))
+      val query = queryGenerator.generateQuery(Query(TestSchema.Queries.getUser)).right.toOption.get
       val variables = variableGenerator
         .generateVariables(
           TestSchema.Queries.getUser,
@@ -71,7 +72,7 @@ class ExecutionSpec extends FunSpec with Matchers {
       val name     = "test user"
       val age      = 26
       val hobbies  = List("debugging")
-      val mutation = queryGenerator.generateQuery(Mutation(TestSchema.Mutations.createUser))
+      val mutation = queryGenerator.generateQuery(Mutation(TestSchema.Mutations.createUser)).right.toOption.get
       val variables = variableGenerator
         .generateVariables(
           TestSchema.Mutations.createUser,

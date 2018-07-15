@@ -6,7 +6,7 @@ import sangria.schema._
 
 import scala.reflect.ClassTag
 
-// TODO: Add variable generator api using dynamic for POC, shapeless later
+// TODO: Add shapeless based variable generation for case classes
 case class VariableGenerator[C, R](schema: Schema[C, R]) extends FieldLookup {
 
   case class ScalarArgument(argument: Argument[_], value: Any) {

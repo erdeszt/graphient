@@ -1,5 +1,6 @@
-package graphient
+package graphient.specs
 
+import graphient._
 import graphient.TestSchema.Domain._
 import org.scalatest._
 import sangria.ast

@@ -9,34 +9,36 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-val testClient = OldClient(TestSchema.schema)
+implicit val queryAstInputUnmarshaller: QueryAstInputUnmarshaller = new QueryAstInputUnmarshaller()
 val queryGenerator = QueryGenerator(TestSchema.schema)
 val variableGenerator = VariableGenerator(TestSchema.schema)
 val getUserCall = QueryByName("getUser")
 val getUserCallArguments = Map("userId" -> 1L)
-val query = testClient.call(getUserCall, getUserCallArguments).right.toOption.get
 val createUserCall = MutationByName("createUser")
 val createUserCallArguments = Map(
   "name" -> "test user",
   "age" -> 26,
   "hobbies" -> List("coding", "debugging")
 )
-val mutation = testClient.call(
-  createUserCall,
+val createUserCallVariables = variableGenerator.generateVariables(
+  TestSchema.Mutations.createUser,
   createUserCallArguments
 ).right.toOption.get
+val result = Await.result(
+  Executor.execute(
+    TestSchema.schema,
+    queryGenerator.generateQuery(Mutation(TestSchema.Mutations.createUser)),
+    new UserRepo {
+      def getUser(id: Long) = None
 
-Await.result(Executor.execute(TestSchema.schema, query, new UserRepo {
-  override def getUser(id: Long) = {
-    Some(User(id, s"User: $id", 25 + id.toInt, List("coding", "debugging")))
-  }
-
-  override def createUser(name: String, age: Int, hobbies: List[String]) = {
-    User(1L, name, age, hobbies)
-  }
-}), 5 seconds)
-
-QueryRenderer.render(query)
+      def createUser(name: String, age: Int, hobbies: List[String]) = {
+        User(1L, name, age, hobbies)
+      }
+    },
+    variables = createUserCallVariables
+  ),
+  5 seconds
+)
 
 val unmarshaller = new QueryAstInputUnmarshaller()
 
