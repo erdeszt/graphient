@@ -186,21 +186,33 @@ object ClientV2 {
       }
     }
 
-    def generateVariables(call: GraphqlCall, variableValues: Map[String, Any]): Either[GraphqlCallError, ast.Value] = {
-      getField(schema, call).flatMap { field =>
-        field.arguments
-          .map { argument =>
-            variableValues.get(argument.name) match {
-              case None => Left(ArgumentNotFound(argument))
-              case Some(value) =>
-                argumentTypeValueToAstValue(argument, argument.argumentType, value).map { argumentAst =>
-                  (argument.name, argumentAst)
-                }
-            }
+    def generateVariables[Ctx, T](
+        field:          Field[Ctx, T],
+        variableValues: Map[String, Any]
+    ): Either[GraphqlCallError, ast.Value] = {
+      field.arguments
+        .map { argument =>
+          variableValues.get(argument.name) match {
+            case None => Left(ArgumentNotFound(argument))
+            case Some(value) =>
+              argumentTypeValueToAstValue(argument, argument.argumentType, value).map { argumentAst =>
+                (argument.name, argumentAst)
+              }
           }
-          .sequence[Either[GraphqlCallError, ?], (String, ast.Value)]
-          .map(fields => ast.ObjectValue(fields: _*))
-      }
+        }
+        .sequence[Either[GraphqlCallError, ?], (String, ast.Value)]
+        .map(fields => ast.ObjectValue(fields: _*))
+    }
+
+    def generateVariables(call: GraphqlCall, variableValues: Map[String, Any]): Either[GraphqlCallError, ast.Value] = {
+      getField(schema, call).flatMap(generateVariables(_, variableValues))
+    }
+
+    def generateVariables[Ctx, T](
+        call:           GraphqlCallV2[Ctx, T],
+        variableValues: Map[String, Any]
+    ): Either[GraphqlCallError, ast.Value] = {
+      generateVariables(call.field, variableValues)
     }
 
   }

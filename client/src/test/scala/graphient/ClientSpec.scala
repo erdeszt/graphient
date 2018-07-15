@@ -218,5 +218,51 @@ class ClientSpec extends FunSpec with Matchers {
       createUser.get.get("hobbies") shouldBe Some(List("coding", "debugging"))
 
     }
+
+    it("V2 with V2 call example") {
+      val queryGenerator    = QueryGenerator(TestSchema())
+      val variableGenerator = VariableGenerator(TestSchema())
+      val createUserQuery   = queryGenerator.generateQuery(MutationV2(TestSchema.createUser))
+      val createUserVariables = variableGenerator
+        .generateVariables(
+          TestSchema.createUser,
+          Map(
+            "name"    -> "test user",
+            "age"     -> 26,
+            "hobbies" -> List("coding", "debugging")
+          )
+        )
+        .right
+        .toOption
+        .get
+      val testRepo = new UserRepo {
+        def getUser(id:      Long): Option[User] = None
+        def createUser(name: String, age: Int, hobbies: List[String]): User = {
+          User(1L, name, age, hobbies)
+        }
+      }
+      implicit val queryAstInputUnmarshaller: QueryAstInputUnmarshaller = new QueryAstInputUnmarshaller()
+      val asyncResult = Executor.execute(
+        TestSchema(),
+        createUserQuery,
+        testRepo,
+        variables = createUserVariables
+      )
+      val result = Await.result(asyncResult, 5 seconds).asInstanceOf[Map[String, Any]]
+
+      val data = result.get("data").asInstanceOf[Some[Map[String, Any]]]
+
+      data should not be empty
+
+      val createUser = data.get.get("createUser").asInstanceOf[Some[Map[String, Any]]]
+
+      createUser should not be empty
+
+      createUser.get.get("id") shouldBe Some(1L)
+      createUser.get.get("name") shouldBe Some("test user")
+      createUser.get.get("age") shouldBe Some(26)
+      createUser.get.get("hobbies") shouldBe Some(List("coding", "debugging"))
+
+    }
   }
 }

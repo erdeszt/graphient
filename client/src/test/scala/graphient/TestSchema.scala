@@ -44,21 +44,24 @@ object TestSchema {
     )
   )
 
+  val createUser: Field[UserRepo, Unit] =
+    Field(
+      "createUser",
+      UserType,
+      arguments = NameArg :: AgeArg :: HobbiesArg :: Nil,
+      resolve = request => {
+        val name    = request.args.arg(NameArg)
+        val age     = request.args.arg(AgeArg)
+        val hobbies = request.args.arg(HobbiesArg).toList
+
+        request.ctx.createUser(name, age, hobbies)
+      }
+    )
+
   val MutationType = ObjectType(
     "Mutation",
     fields[UserRepo, Unit](
-      Field(
-        "createUser",
-        UserType,
-        arguments = NameArg :: AgeArg :: HobbiesArg :: Nil,
-        resolve = request => {
-          val name    = request.args.arg(NameArg)
-          val age     = request.args.arg(AgeArg)
-          val hobbies = request.args.arg(HobbiesArg).toList
-
-          request.ctx.createUser(name, age, hobbies)
-        }
-      )
+      createUser
     )
   )
 
