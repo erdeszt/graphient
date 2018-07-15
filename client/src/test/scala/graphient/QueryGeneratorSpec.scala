@@ -1,6 +1,6 @@
 package graphient
 
-import TestSchema.Domain._
+import graphient.TestSchema.Domain._
 import org.scalatest._
 import sangria.validation.QueryValidator
 
