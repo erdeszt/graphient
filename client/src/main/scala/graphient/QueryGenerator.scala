@@ -8,14 +8,10 @@ case class QueryGenerator[C, R](schema: Schema[C, R]) extends FieldLookup {
 
   def generateQuery(call: GraphqlCall): Either[GraphqlCallError, ast.Document] = {
     getField(schema, call).map { field =>
-      val operationType = call match {
-        case Query(_)    => ast.OperationType.Query
-        case Mutation(_) => ast.OperationType.Mutation
+      call match {
+        case Query(_)    => generateQuery(QueryV2(field))
+        case Mutation(_) => generateQuery(MutationV2(field))
       }
-      val (argumentsAst, variableAst) = generateArgumentListAst(field.arguments).unzip
-      val selectionASt                = generateSelectionAst(field.fieldType)
-
-      wrapInDocument(operationType, field, argumentsAst, variableAst, selectionASt)
     }
   }
 
