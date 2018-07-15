@@ -68,12 +68,59 @@ class VariableGeneratorSpec extends FunSpec with Matchers {
       hobbiesVariable.value.asInstanceOf[ast.ListValue].values.toList shouldBe testUserHobbies.map(ast.StringValue(_))
     }
 
-    ignore("should handle missing arguments") {
-      fail("WIP")
+    it("should handle missing arguments in queries") {
+      val variables = variableGenerator.generateVariables(TestSchema.Queries.getUser, Map[String, Any]())
+
+      variables should be('left)
+      variables.left.toOption.get should be(ArgumentNotFound(TestSchema.Arguments.UserIdArg))
     }
 
-    ignore("should handle invalid arguments") {
-      fail("WIP")
+    it("should handle missing arguments in mutations") {
+      val variables = variableGenerator.generateVariables(
+        TestSchema.Mutations.createUser,
+        Map[String, Any]("name" -> "test", "age" -> 34)
+      )
+
+      variables should be('left)
+      variables.left.toOption.get should be(ArgumentNotFound(TestSchema.Arguments.HobbiesArg))
+    }
+
+    it("should handle invalid arguments(Int)") {
+      val variables = variableGenerator.generateVariables(
+        TestSchema.Mutations.createUser,
+        Map[String, Any](
+          "name"    -> "valid name",
+          "age"     -> "invalid age",
+          "hobbies" -> List[String]()
+        )
+      )
+
+      variables should be('left)
+      variables.left.toOption.get should be(InvalidArgumentValue(TestSchema.Arguments.AgeArg, "invalid age"))
+    }
+
+    it("should handle invalid arguments(Long)") {
+      val variables = variableGenerator.generateVariables(
+        TestSchema.Queries.getUser,
+        Map[String, Any]("userId" -> "invalidId")
+      )
+
+      variables should be('left)
+      variables.left.toOption.get should be(InvalidArgumentValue(TestSchema.Arguments.UserIdArg, "invalidId"))
+    }
+
+    it("should handle invalid arguments(String)") {
+      val variables = variableGenerator.generateVariables(
+        TestSchema.Mutations.createUser,
+        Map[String, Any](
+          "name"    -> 1,
+          "age"     -> 42,
+          "hobbies" -> List[String]()
+        )
+      )
+
+      variables should be('left)
+      variables.left.toOption.get should be(InvalidArgumentValue(TestSchema.Arguments.NameArg, 1))
     }
 
   }
