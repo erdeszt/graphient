@@ -3,6 +3,7 @@ package graphient
 import sangria.ast
 import sangria.schema._
 
+// TODO: Using the V2 api it's possible to mutation fields wrapped in Query which will result in an invalid query
 case class QueryGenerator[C, R](schema: Schema[C, R]) extends FieldLookup {
 
   def generateQuery(call: GraphqlCall): Either[GraphqlCallError, ast.Document] = {
