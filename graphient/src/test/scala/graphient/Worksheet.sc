@@ -27,7 +27,7 @@ val createUserCallVariables = variableGenerator.generateVariables(
 val result = Await.result(
   Executor.execute(
     TestSchema.schema,
-    queryGenerator.generateQuery(Mutation(TestSchema.Mutations.createUser)),
+    queryGenerator.generateQuery(Mutation(TestSchema.Mutations.createUser)).right.toOption.get,
     new UserRepo {
       def getUser(id: Long) = None
 
