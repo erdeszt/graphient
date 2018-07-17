@@ -3,7 +3,7 @@ package graphient
 import sangria.ast
 import sangria.schema._
 
-case class QueryGenerator[C, R](schema: Schema[C, R]) extends FieldLookup {
+class QueryGenerator[C, R](schema: Schema[C, R]) extends FieldLookup {
 
   def generateQuery(call: NamedGraphqlCall): Either[GraphqlCallError, ast.Document] = {
     getField(schema, call).map { field =>

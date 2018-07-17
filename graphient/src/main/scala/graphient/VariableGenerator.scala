@@ -7,7 +7,7 @@ import sangria.schema._
 import scala.reflect.ClassTag
 
 // TODO: Add shapeless based variable generation for case classes
-case class VariableGenerator[C, R](schema: Schema[C, R]) extends FieldLookup {
+class VariableGenerator[C, R](schema: Schema[C, R]) extends FieldLookup {
 
   case class ScalarArgument(argument: Argument[_], value: Any) {
 

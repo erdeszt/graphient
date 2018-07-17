@@ -10,8 +10,8 @@ import scala.concurrent.Await
 import scala.concurrent.duration._
 
 implicit val queryAstInputUnmarshaller: QueryAstInputUnmarshaller = new QueryAstInputUnmarshaller()
-val queryGenerator = QueryGenerator(TestSchema.schema)
-val variableGenerator = VariableGenerator(TestSchema.schema)
+val queryGenerator = new QueryGenerator(TestSchema.schema)
+val variableGenerator = new VariableGenerator(TestSchema.schema)
 val getUserCall = QueryByName("getUser")
 val getUserCallArguments = Map("userId" -> 1L)
 val createUserCall = MutationByName("createUser")
