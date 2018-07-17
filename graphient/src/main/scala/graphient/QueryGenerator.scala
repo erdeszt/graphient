@@ -78,8 +78,6 @@ class QueryGenerator[C, R](schema: Schema[C, R]) extends FieldLookup {
     }
   }
 
-  // TODO: Fix variable definition generation hack
-  // create proper transformation from schema.InputType to ast.Type
   private def generateVariableDefinition(argument: Argument[_]): ast.VariableDefinition = {
     def wrapList(argumentType: InputType[_])(ty: ast.Type): ast.Type = {
       if (argumentType.isList) {

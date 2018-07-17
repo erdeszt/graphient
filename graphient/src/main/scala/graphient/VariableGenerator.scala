@@ -6,7 +6,6 @@ import sangria.schema._
 
 import scala.reflect.ClassTag
 
-// TODO: Add shapeless based variable generation for case classes
 class VariableGenerator[C, R](schema: Schema[C, R]) extends FieldLookup {
 
   case class ScalarArgument(argument: Argument[_], value: Any) {
@@ -37,10 +36,9 @@ class VariableGenerator[C, R](schema: Schema[C, R]) extends FieldLookup {
       case scalar: ScalarType[_] =>
         val arg = ScalarArgument(argument, value)
         scalar.name match {
-          case "Int" => arg[java.lang.Integer](x => ast.IntValue(x))
-          // TODO: Why java.lang.Long necessary? erasure because of Any?
-          case "Long"   => arg[java.lang.Long](x   => ast.BigIntValue(BigInt(x)))
-          case "String" => arg[java.lang.String](x => ast.StringValue(x))
+          case "Int"    => arg[java.lang.Integer](x => ast.IntValue(x))
+          case "Long"   => arg[java.lang.Long](x    => ast.BigIntValue(BigInt(x)))
+          case "String" => arg[java.lang.String](x  => ast.StringValue(x))
         }
       case list: ListInputType[_] =>
         value
