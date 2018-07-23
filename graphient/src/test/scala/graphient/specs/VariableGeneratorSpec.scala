@@ -74,7 +74,24 @@ class VariableGeneratorSpec extends FunSpec with Matchers {
       hobbiesVariable.value shouldBe a[ast.ListValue]
       hobbiesVariable.value.asInstanceOf[ast.ListValue].values.toList shouldBe testUserHobbies.map(ast.StringValue(_))
 
-      // TODO: verify addressVariable fields
+      addressVariable.name shouldBe "address"
+      addressVariable.value shouldBe a[ast.ObjectValue]
+
+      val zipVariable    = addressVariable.value.asInstanceOf[ast.ObjectValue].fields(0)
+      val cityVariable   = addressVariable.value.asInstanceOf[ast.ObjectValue].fields(1)
+      val streetVariable = addressVariable.value.asInstanceOf[ast.ObjectValue].fields(2)
+
+      zipVariable.name shouldBe "zip"
+      zipVariable.value shouldBe a[ast.IntValue]
+      zipVariable.value.asInstanceOf[ast.IntValue].value shouldBe testAddress.zip
+
+      cityVariable.name shouldBe "city"
+      cityVariable.value shouldBe a[ast.StringValue]
+      cityVariable.value.asInstanceOf[ast.StringValue].value shouldBe testAddress.city
+
+      streetVariable.name shouldBe "street"
+      streetVariable.value shouldBe a[ast.StringValue]
+      streetVariable.value.asInstanceOf[ast.StringValue].value shouldBe testAddress.street
     }
 
     it("should handle missing arguments in queries") {
