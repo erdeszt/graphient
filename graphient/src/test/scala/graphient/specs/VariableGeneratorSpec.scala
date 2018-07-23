@@ -73,6 +73,8 @@ class VariableGeneratorSpec extends FunSpec with Matchers {
       hobbiesVariable.name shouldBe "hobbies"
       hobbiesVariable.value shouldBe a[ast.ListValue]
       hobbiesVariable.value.asInstanceOf[ast.ListValue].values.toList shouldBe testUserHobbies.map(ast.StringValue(_))
+
+      // TODO: verify addressVariable fields
     }
 
     it("should handle missing arguments in queries") {

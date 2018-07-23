@@ -52,12 +52,20 @@ class VariableGenerator[C, R](schema: Schema[C, R]) extends FieldLookup {
       case obj: InputObjectType[_] =>
         obj.fields
           .map { field =>
-            argumentTypeValueToAstValue(
-              argument,
-              field.fieldType,
-              // TODO: Fix the unchecked lookup!
-              value.asInstanceOf[Map[String, Any]](field.name)
-            ).map(ast.ObjectField(field.name, _))
+            value
+              .asInstanceOf[Map[String, Any]]
+              .get(field.name)
+              /* TODO: Error location is still incorrect for nested objects
+                 (maybe add optional list of field names to this metod) */
+              .fold[Either[GraphqlCallError, ast.ObjectField]] {
+                Left(ArgumentFieldNotFound(argument, field.name))
+              } { fieldValue =>
+                argumentTypeValueToAstValue(
+                  argument,
+                  field.fieldType,
+                  fieldValue
+                ).map(x => ast.ObjectField(field.name, x))
+              }
           }
           .sequence[Either[GraphqlCallError, ?], ast.ObjectField]
           .map(x => ast.ObjectValue(x.toVector))

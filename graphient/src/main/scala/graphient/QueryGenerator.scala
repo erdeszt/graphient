@@ -95,6 +95,8 @@ class QueryGenerator[C, R](schema: Schema[C, R]) extends FieldLookup {
             directives = Vector(),
             selections = obj.fields.map(generateFieldSelectionAst)
           )
+        case _ =>
+          throw new Exception("WIP Unsupported field type")
       }
     }
     outputType match {
