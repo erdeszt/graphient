@@ -35,13 +35,19 @@ class VariableGeneratorSpec extends FunSpec with Matchers {
       val testUserName    = "test user"
       val testUserAge     = 26
       val testUserHobbies = List("coding")
+      val testAddress     = Address(1, "city 1", "main street")
       val variables = variableGenerator
         .generateVariables(
           TestSchema.Mutations.createUser,
           Map(
             "name"    -> testUserName,
             "age"     -> testUserAge,
-            "hobbies" -> testUserHobbies
+            "hobbies" -> testUserHobbies,
+            "address" -> Map(
+              "zip"    -> testAddress.zip,
+              "city"   -> testAddress.city,
+              "street" -> testAddress.street
+            )
           )
         )
         .right
@@ -49,11 +55,12 @@ class VariableGeneratorSpec extends FunSpec with Matchers {
 
       variables should not be empty
       variables.get shouldBe a[ast.ObjectValue]
-      variables.get.asInstanceOf[ast.ObjectValue].fields should have length 3
+      variables.get.asInstanceOf[ast.ObjectValue].fields should have length 4
 
       val nameVariable    = variables.get.asInstanceOf[ast.ObjectValue].fields(0)
       val ageVariable     = variables.get.asInstanceOf[ast.ObjectValue].fields(1)
       val hobbiesVariable = variables.get.asInstanceOf[ast.ObjectValue].fields(2)
+      val addressVariable = variables.get.asInstanceOf[ast.ObjectValue].fields(3)
 
       nameVariable.name shouldBe "name"
       nameVariable.value shouldBe a[ast.StringValue]

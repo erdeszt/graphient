@@ -31,8 +31,8 @@ val result = Await.result(
     new UserRepo {
       def getUser(id: Long) = None
 
-      def createUser(name: String, age: Int, hobbies: List[String]) = {
-        User(1L, name, age, hobbies)
+      def createUser(name: String, age: Int, hobbies: List[String], address: Address) = {
+        User(1L, name, age, hobbies, address)
       }
     },
     variables = createUserCallVariables

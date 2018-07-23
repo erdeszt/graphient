@@ -1,6 +1,8 @@
 package graphient
 
 import sangria.schema._
+import sangria.macros.derive._
+import sangria.marshalling.{CoercedScalaResultMarshaller, FromInput, ResultMarshaller}
 
 object TestSchema {
 
@@ -9,17 +11,34 @@ object TestSchema {
         id:      Long,
         name:    String,
         age:     Int,
-        hobbies: List[String]
+        hobbies: List[String],
+        address: Address
+    )
+
+    case class Address(
+        zip:    Int,
+        city:   String,
+        street: String
     )
 
     trait UserRepo {
       def getUser(id:      Long): Option[User]
-      def createUser(name: String, age: Int, hobbies: List[String]): User
+      def createUser(name: String, age: Int, hobbies: List[String], address: Address): User
     }
   }
 
   object Types {
     import Domain._
+
+    val AddressType = ObjectType(
+      "address",
+      "Address desc...",
+      fields[Unit, Address](
+        Field("zip", IntType, resolve       = _.value.zip),
+        Field("city", StringType, resolve   = _.value.city),
+        Field("street", StringType, resolve = _.value.street)
+      )
+    )
 
     val UserType = ObjectType(
       "User",
@@ -28,7 +47,8 @@ object TestSchema {
         Field("id", LongType, resolve                  = _.value.id),
         Field("name", StringType, resolve              = _.value.name),
         Field("age", IntType, resolve                  = _.value.age),
-        Field("hobbies", ListType(StringType), resolve = _.value.hobbies)
+        Field("hobbies", ListType(StringType), resolve = _.value.hobbies),
+        Field("address", AddressType, resolve          = _.value.address)
       )
     )
 
@@ -36,10 +56,27 @@ object TestSchema {
 
   object Arguments {
 
+    private val AddressInputType = deriveInputObjectType[Domain.Address]()
+
+    implicit val addressFromInput = new FromInput[Domain.Address] {
+      val marshaller: ResultMarshaller = CoercedScalaResultMarshaller.default
+
+      def fromResult(node: marshaller.Node): Domain.Address = {
+        val rawAddress = node.asInstanceOf[Map[String, Any]]
+
+        Domain.Address(
+          rawAddress("zip").asInstanceOf[Int],
+          rawAddress("city").asInstanceOf[String],
+          rawAddress("street").asInstanceOf[String]
+        )
+      }
+    }
+
     val UserIdArg  = Argument("userId", LongType)
     val NameArg    = Argument("name", StringType)
     val AgeArg     = Argument("age", IntType)
     val HobbiesArg = Argument("hobbies", ListInputType(StringType))
+    val AddressArg = Argument("address", AddressInputType)
 
   }
 
@@ -75,13 +112,14 @@ object TestSchema {
       Field(
         "createUser",
         UserType,
-        arguments = NameArg :: AgeArg :: HobbiesArg :: Nil,
+        arguments = NameArg :: AgeArg :: HobbiesArg :: AddressArg :: Nil,
         resolve = request => {
           val name    = request.args.arg(NameArg)
           val age     = request.args.arg(AgeArg)
           val hobbies = request.args.arg(HobbiesArg).toList
+          val address = request.args.arg(AddressArg)
 
-          request.ctx.createUser(name, age, hobbies)
+          request.ctx.createUser(name, age, hobbies, address)
         }
       )
 

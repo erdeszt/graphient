@@ -15,7 +15,7 @@ class ExecutionSpec extends FunSpec with Matchers {
   private implicit val queryAstInputUnmarshaller: QueryAstInputUnmarshaller = new QueryAstInputUnmarshaller()
   private val queryGenerator    = new QueryGenerator(TestSchema.schema)
   private val variableGenerator = new VariableGenerator(TestSchema.schema)
-  private val defaultUser       = User(1L, "default", 42, List("coding"))
+  private val defaultUser       = User(1L, "default", 42, List("coding"), Address(1, "city 1", "main street"))
   private val newUserId         = 2L
 
   object TestUserRepo extends UserRepo {
@@ -27,8 +27,8 @@ class ExecutionSpec extends FunSpec with Matchers {
       }
     }
 
-    override def createUser(name: String, age: Int, hobbies: List[String]): User = {
-      User(newUserId, name, age, hobbies)
+    override def createUser(name: String, age: Int, hobbies: List[String], address: Address): User = {
+      User(newUserId, name, age, hobbies, address)
     }
   }
 
@@ -76,7 +76,16 @@ class ExecutionSpec extends FunSpec with Matchers {
       val variables = variableGenerator
         .generateVariables(
           TestSchema.Mutations.createUser,
-          Map("name" -> name, "age" -> age, "hobbies" -> hobbies)
+          Map(
+            "name"    -> name,
+            "age"     -> age,
+            "hobbies" -> hobbies,
+            "address" -> Map(
+              "zip"    -> 1,
+              "city"   -> "country 1",
+              "street" -> "main street"
+            )
+          )
         )
         .right
         .toOption
