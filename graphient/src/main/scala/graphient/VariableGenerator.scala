@@ -8,16 +8,15 @@ import scala.reflect.ClassTag
 
 class VariableGenerator[C, R](schema: Schema[C, R]) extends FieldLookup {
 
-  case class ScalarArgument(argument: Argument[_], value: Any) {
-
-    private def castIfValid[S: ClassTag](value: Any): Option[S] = {
-      if (implicitly[ClassTag[S]].runtimeClass.isInstance(value)) {
-        Some(value.asInstanceOf[S])
-      } else {
-        None
-      }
+  private def castIfValid[S: ClassTag](value: Any): Option[S] = {
+    if (implicitly[ClassTag[S]].runtimeClass.isInstance(value)) {
+      Some(value.asInstanceOf[S])
+    } else {
+      None
     }
+  }
 
+  case class ScalarArgument(argument: Argument[_], value: Any) {
     def apply[A: ClassTag](wrapper: A => ast.Value): Either[GraphqlCallError, ast.Value] = {
       castIfValid[A](value).fold {
         Left(InvalidArgumentValue(argument, value)): Either[GraphqlCallError, ast.Value]
@@ -50,25 +49,28 @@ class VariableGenerator[C, R](schema: Schema[C, R]) extends FieldLookup {
           .sequence[Either[GraphqlCallError, ?], ast.Value]
           .map(values => ast.ListValue(values.toVector))
       case obj: InputObjectType[_] =>
-        obj.fields
-          .map { field =>
-            value
-              .asInstanceOf[Map[String, Any]]
-              .get(field.name)
-              /* TODO: Error location is still incorrect for nested objects
-                 (maybe add optional list of field names to this metod) */
-              .fold[Either[GraphqlCallError, ast.ObjectField]] {
-                Left(ArgumentFieldNotFound(argument, field.name))
-              } { fieldValue =>
-                argumentTypeValueToAstValue(
-                  argument,
-                  field.fieldType,
-                  fieldValue
-                ).map(x => ast.ObjectField(field.name, x))
-              }
-          }
-          .sequence[Either[GraphqlCallError, ?], ast.ObjectField]
-          .map(x => ast.ObjectValue(x.toVector))
+        for {
+          objValue <- castIfValid[Map[String, Any]](value).fold[Either[GraphqlCallError, Map[String, Any]]](
+            Left(InvalidArgumentValue(argument, value))
+          )(Right(_))
+          fields <- obj.fields
+            .map { field =>
+              objValue
+                .get(field.name)
+                /* TODO: Error location is still incorrect for nested objects
+               (maybe add optional list of field names to this metod) */
+                .fold[Either[GraphqlCallError, ast.ObjectField]] {
+                  Left(ArgumentFieldNotFound(argument, field.name))
+                } { fieldValue =>
+                  argumentTypeValueToAstValue(
+                    argument,
+                    field.fieldType,
+                    fieldValue
+                  ).map(x => ast.ObjectField(field.name, x))
+                }
+            }
+            .sequence[Either[GraphqlCallError, ?], ast.ObjectField]
+        } yield ast.ObjectValue(fields.toVector)
       case _ =>
         throw new Exception("WIP Unsupported argument type")
     }

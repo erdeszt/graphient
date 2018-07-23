@@ -111,6 +111,24 @@ class VariableGeneratorSpec extends FunSpec with Matchers {
       variables.left.toOption.get should be(ArgumentNotFound(TestSchema.Arguments.HobbiesArg))
     }
 
+    it("should handle missing arguments in mutation fields") {
+      val variables = variableGenerator.generateVariables(
+        TestSchema.Mutations.createUser,
+        Map[String, Any](
+          "name"    -> "test",
+          "age"     -> 34,
+          "hobbies" -> List("coding", "debugging"),
+          "address" -> Map(
+            "zip"  -> 1,
+            "city" -> "city 1"
+          )
+        )
+      )
+
+      variables should be('left)
+      variables.left.toOption.get should be(ArgumentFieldNotFound(TestSchema.Arguments.AddressArg, "street"))
+    }
+
     it("should handle invalid arguments(Int)") {
       val variables = variableGenerator.generateVariables(
         TestSchema.Mutations.createUser,
@@ -147,6 +165,22 @@ class VariableGeneratorSpec extends FunSpec with Matchers {
 
       variables should be('left)
       variables.left.toOption.get should be(InvalidArgumentValue(TestSchema.Arguments.NameArg, 1))
+    }
+
+    it("should handle invalid arguments(Object)") {
+      val variables = variableGenerator.generateVariables(
+        TestSchema.Mutations.createUser,
+        Map[String, Any](
+          "name"    -> "user 1",
+          "age"     -> 42,
+          "hobbies" -> List[String]("coding"),
+          "address" -> "city 1, main street"
+        )
+      )
+
+      variables should be('left)
+      variables.left.toOption.get should be(
+        InvalidArgumentValue(TestSchema.Arguments.AddressArg, "city 1, main street"))
     }
 
   }

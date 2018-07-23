@@ -66,12 +66,21 @@ class ExecutionSpec extends FunSpec with Matchers {
       getUser.get.get("name") should contain(defaultUser.name)
       getUser.get.get("age") should contain(defaultUser.age)
       getUser.get.get("hobbies") should contain(defaultUser.hobbies)
+
+      val address = getUser.get("address").asInstanceOf[Map[String, Any]]
+
+      address.get("zip") should contain(defaultUser.address.zip)
+      address.get("city") should contain(defaultUser.address.city)
+      address.get("street") should contain(defaultUser.address.street)
     }
 
     it("should execute mutations successfully") {
       val name     = "test user"
       val age      = 26
       val hobbies  = List("debugging")
+      val zip      = 1
+      val city     = "country 1"
+      val street   = "main street"
       val mutation = queryGenerator.generateQuery(Mutation(TestSchema.Mutations.createUser)).right.toOption.get
       val variables = variableGenerator
         .generateVariables(
@@ -81,9 +90,9 @@ class ExecutionSpec extends FunSpec with Matchers {
             "age"     -> age,
             "hobbies" -> hobbies,
             "address" -> Map(
-              "zip"    -> 1,
-              "city"   -> "country 1",
-              "street" -> "main street"
+              "zip"    -> zip,
+              "city"   -> city,
+              "street" -> street
             )
           )
         )
@@ -112,6 +121,12 @@ class ExecutionSpec extends FunSpec with Matchers {
       createUser.get.get("name") should contain(name)
       createUser.get.get("age") should contain(age)
       createUser.get.get("hobbies") should contain(hobbies)
+
+      val address = createUser.get("address").asInstanceOf[Map[String, Any]]
+
+      address.get("zip") should contain(zip)
+      address.get("city") should contain(city)
+      address.get("street") should contain(street)
     }
 
   }
