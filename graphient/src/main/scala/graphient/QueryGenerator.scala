@@ -60,45 +60,30 @@ class QueryGenerator[C, R](schema: Schema[C, R]) extends FieldLookup {
   }
 
   private def generateSelectionAst[T](outputType: OutputType[T]): Vector[ast.Selection] = {
-    // TODO: Cleanup
+    def fieldSelection(field: Field[_, _], selections: Vector[ast.Selection] = Vector.empty): ast.Selection = {
+      ast.Field(
+        alias      = None,
+        name       = field.name,
+        arguments  = Vector(),
+        directives = Vector(),
+        selections = selections
+      )
+    }
     def generateFieldSelectionAst(field: Field[_, _]): ast.Selection = {
       field.fieldType match {
-        case scalar: ScalarType[_] =>
-          ast.Field(
-            alias      = None,
-            name       = field.name,
-            arguments  = Vector(),
-            directives = Vector(),
-            selections = Vector()
-          )
-        case scalar: ScalarAlias[_, _] =>
-          ast.Field(
-            alias      = None,
-            name       = field.name,
-            arguments  = Vector(),
-            directives = Vector(),
-            selections = Vector()
-          )
+        case _: ScalarType[_] =>
+          fieldSelection(field)
+        case _: ScalarAlias[_, _] =>
+          fieldSelection(field)
         case list: ListType[_] =>
-          ast.Field(
-            alias      = None,
-            name       = field.name,
-            arguments  = Vector(),
-            directives = Vector(),
-            selections = Vector()
-          )
+          fieldSelection(field)
         case obj: ObjectType[_, _] =>
-          ast.Field(
-            alias      = None,
-            name       = field.name,
-            arguments  = Vector(),
-            directives = Vector(),
-            selections = obj.fields.map(generateFieldSelectionAst)
-          )
+          fieldSelection(field, obj.fields.map(generateFieldSelectionAst))
         case _ =>
           throw new Exception("WIP Unsupported field type")
       }
     }
+
     outputType match {
       case obj: ObjectType[_, _] =>
         val fieldAsts = obj.fields.map(generateFieldSelectionAst)
