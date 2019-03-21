@@ -27,8 +27,8 @@ class ExecutionSpec extends FunSpec with Matchers {
       }
     }
 
-    override def createUser(name: String, age: Int, hobbies: List[String], address: Address): User = {
-      User(newUserId, name, age, hobbies, address)
+    override def createUser(name: String, age: Option[Int], hobbies: List[String], address: Address): User = {
+      User(newUserId, name, age.getOrElse(100), hobbies, address)
     }
   }
 
@@ -76,7 +76,7 @@ class ExecutionSpec extends FunSpec with Matchers {
 
     it("should execute mutations successfully") {
       val name     = "test user"
-      val age      = 26
+      val age      = Some(26)
       val hobbies  = List("debugging")
       val zip      = 1
       val city     = "country 1"
@@ -119,7 +119,7 @@ class ExecutionSpec extends FunSpec with Matchers {
       createUser should not be empty
       createUser.get.get("id") should contain(newUserId)
       createUser.get.get("name") should contain(name)
-      createUser.get.get("age") should contain(age)
+      createUser.get.get("age") should be(age)
       createUser.get.get("hobbies") should contain(hobbies)
 
       val address = createUser.get("address").asInstanceOf[Map[String, Any]]
