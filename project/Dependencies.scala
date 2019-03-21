@@ -3,7 +3,7 @@ import sbt._
 object Dependencies {
 
   lazy val sangria = Seq(
-    "org.sangria-graphql" %% "sangria" % "1.4.1",
+    "org.sangria-graphql" %% "sangria" % "1.4.2",
     "org.sangria-graphql" %% "sangria-circe" % "1.2.1"
   )
 

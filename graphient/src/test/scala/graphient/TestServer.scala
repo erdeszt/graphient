@@ -35,71 +35,90 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 object TestServer extends IOApp with KleisliSyntax {
 
+  case class ErrorResponse(error: String)
+
+  implicit val (errorResponseEncoder, errorResponseDecoders) = {
+    (deriveEncoder[ErrorResponse], deriveDecoder[ErrorResponse])
+  }
+
   private def executeQuery(query: Document, op: Option[String], vars: Option[JsonObject]) = {
-      val apiService = new UserRepo {
-        override def getUser(id: Long): Option[Domain.User] = {
-          Some(Domain.User(
-            id = 12L,
-            name = "test",
-            age = 123,
+    val apiService = new UserRepo {
+      override def getUser(id: Long): Option[Domain.User] = {
+        Some(
+          Domain.User(
+            id      = 12L,
+            name    = "test",
+            age     = 123,
             hobbies = List("1231321", "123"),
             address = Domain.Address(
-              zip = 2300,
-              city = "cph",
+              zip    = 2300,
+              city   = "cph",
               street = "et"
             )
-          )
-          )
+          ))
 
-        }
-
-        override def createUser(name: String, age: Option[Int], hobbies: List[String], address: Domain.Address): Domain.User = {
-          Domain.User(
-            id = 12L,
-            name = name,
-            age = age.getOrElse(100),
-            hobbies = hobbies,
-            address = address
-          )
-        }
       }
-      Executor
-          .execute(
-             TestSchema.schema,
-          query,
-          apiService,
-          operationName    = op,
-          variables        = Json.fromJsonObject(vars.getOrElse(JsonObject.empty))
+
+      override def createUser(
+          name:    String,
+          age:     Option[Int],
+          hobbies: List[String],
+          address: Domain.Address
+      ): Domain.User = {
+        Domain.User(
+          id      = 12L,
+          name    = name,
+          age     = age.getOrElse(100),
+          hobbies = hobbies,
+          address = address
         )
+      }
     }
+    Executor
+      .execute(
+        TestSchema.schema,
+        query,
+        apiService,
+        operationName = op,
+        variables     = Json.fromJsonObject(vars.getOrElse(JsonObject.empty))
+      )
+  }
 
   def run(args: List[String]): IO[ExitCode] = {
-    val router = org.http4s.server.Router(
-      "/" -> HttpRoutes[IO] {
-        case GET -> Root => OptionT.liftF(Ok("Front page"))
-        case request @ (POST -> Root / "graphql") =>
-          val response = request.as[Json].flatMap { json =>
-          val query = root.query.string.getOption(json).get
-          val operation = root.operationName.string.getOption(json)
-          val variables = root.variables.obj.getOption(json)
+    val router = org.http4s.server
+      .Router(
+        "/" -> HttpRoutes[IO] {
+          case GET -> Root => OptionT.liftF(Ok("Front page"))
+          case request @ (POST -> Root / "graphql") =>
+            val response = request.as[Json].flatMap {
+              json =>
+                val query     = root.query.string.getOption(json).get
+                val operation = root.operationName.string.getOption(json)
+                val variables = root.variables.obj.getOption(json)
 
-            val queryAst = QueryParser.parse(query).getOrElse(throw new Exception("Wrong query"))
+                val queryAst = QueryParser.parse(query).getOrElse(throw new Exception("Wrong query"))
 
-            val futureResponse = executeQuery(queryAst, operation, variables).map { responseJson =>
-              Ok(responseJson)
+                val futureResponse = executeQuery(queryAst, operation, variables).map { responseJson =>
+                  Ok(responseJson)
+                }
+
+                IO.fromFuture(IO(futureResponse)).flatten
+
             }
+            val or = OptionT.liftF(response)
 
-            IO.fromFuture(IO(futureResponse)).flatten
+            or
 
         }
-        val or = OptionT.liftF(response)
-
-        or
-
-      }
-    ).orNotFound
+      )
+      .orNotFound
 
     BlazeServerBuilder[IO]
+      .withServiceErrorHandler((_: Request[IO]) => {
+        case error: Throwable =>
+          IO(println(s"Error: ${error.getMessage}\n${error.getStackTrace.mkString("\n")}")) >>
+            InternalServerError(ErrorResponse(error.getMessage).asJson)
+      })
       .bindHttp(8080, "0.0.0.0")
       .withHttpApp(router)
       .serve

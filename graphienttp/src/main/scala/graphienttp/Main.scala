@@ -6,20 +6,21 @@ import graphient.TestSchema.Domain.UserRepo
 import com.softwaremill.sttp._
 
 object Main {
-  def main(args: Array[String]): Unit = {
 
-    // TODO: provide sttp backend
+  implicit val backend: SttpBackend[Id, Nothing] = HttpURLConnectionBackend()
+
+  def main(args: Array[String]): Unit = {
 
     println("ping")
 
-    implicit val backend: SttpBackend[Id, Nothing] = HttpURLConnectionBackend()
-
     val client = new GraphienttpClient[UserRepo](TestSchema.schema, uri"http://localhost:8080/graphql")
 
+    // TODO: Map[String, Any] based implementation for convenience
     val request: Request[String, Nothing] =
-      client.runQuery(Query(TestSchema.Queries.getUser), Map[String, Any]("userId" -> 1L))
+      client.runQuery(Query(TestSchema.Queries.getUser), GetUserPayload(42L))
 
     val response = request.send()
+
     println(response)
 
   }
