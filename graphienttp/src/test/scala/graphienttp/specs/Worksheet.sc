@@ -7,7 +7,8 @@ val query = "http language:scala"
 
 // the `query` parameter is automatically url-encoded
 // `sort` is removed, as the value is not defined
-val request = sttp.get(uri"https://api.github.com/search/repositories?q=$query&sort=$sort")
+// val request = sttp.get(uri"https://api.github.com/search/repositories?q=$query&sort=$sort")
+val request = sttp.get(uri"http://localhost:8080")
 
 implicit val backend = HttpURLConnectionBackend()
 val response = request.send()

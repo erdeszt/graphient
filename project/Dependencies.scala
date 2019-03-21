@@ -13,7 +13,8 @@ object Dependencies {
   lazy val circe = Seq(
     "io.circe" %% "circe-core" % circeVersion,
     "io.circe" %% "circe-generic" % circeVersion,
-    "io.circe" %% "circe-parser" % circeVersion
+    "io.circe" %% "circe-parser" % circeVersion,
+    "io.circe" %% "circe-generic-extras" % "0.10.0-M2", // TODO: ?
   )
 
   lazy val cats       = "org.typelevel" %% "cats-core" % "1.0.1"
@@ -32,8 +33,7 @@ object Dependencies {
     "org.http4s" %% "http4s-blaze-server" % http4sVersion,
     "org.http4s" %% "http4s-circe" % http4sVersion,
     "io.circe" %% "circe-optics" % circeVersion,
-      "org.sangria-graphql" %% "sangria-circe" % "1.2.1"
-
+    "org.sangria-graphql" %% "sangria-circe" % "1.2.1"
   )
 
 }

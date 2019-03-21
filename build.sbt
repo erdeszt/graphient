@@ -37,6 +37,6 @@ lazy val graphienttp = (project in file("graphienttp")).
     libraryDependencies += scalaTest % Test,
     libraryDependencies ++= sttp,
     libraryDependencies ++= http4s
-  )
+  ).dependsOn(graphient)
 
 lazy val root = (project in file(".")).aggregate(graphient, graphienttp)
