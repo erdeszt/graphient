@@ -15,7 +15,7 @@ val variableGenerator = new VariableGenerator(TestSchema.schema)
 val getUserCall = QueryByName("getUser")
 val getUserCallArguments = Map("userId" -> 1L)
 val createUserCall = MutationByName("createUser")
-val createUserCallArguments = Map(
+val createUserCallArguments = Map[String, Any](
   "name" -> "test user",
   "age" -> 26,
   "hobbies" -> List("coding", "debugging")
@@ -31,8 +31,8 @@ val result = Await.result(
     new UserRepo {
       def getUser(id: Long) = None
 
-      def createUser(name: String, age: Int, hobbies: List[String], address: Address) = {
-        User(1L, name, age, hobbies, address)
+      def createUser(name: String, age: Option[Int], hobbies: List[String], address: Address) = {
+        User(1L, name, age.getOrElse(100), hobbies, address)
       }
     },
     variables = createUserCallVariables
