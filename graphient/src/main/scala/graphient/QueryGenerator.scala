@@ -75,6 +75,8 @@ class QueryGenerator[C, R](schema: Schema[C, R]) extends FieldLookup {
           fieldSelection(field)
         case _: ScalarAlias[_, _] =>
           fieldSelection(field)
+        case _: OptionType[T] =>
+          fieldSelection(field)
         case list: ListType[_] =>
           fieldSelection(field)
         case obj: ObjectType[_, _] =>

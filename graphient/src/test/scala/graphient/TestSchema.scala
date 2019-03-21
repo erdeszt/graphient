@@ -46,7 +46,7 @@ object TestSchema {
       fields[Unit, User](
         Field("id", LongType, resolve                  = _.value.id),
         Field("name", StringType, resolve              = _.value.name),
-        Field("age", IntType, resolve                  = _.value.age),
+        Field("age", OptionType(IntType), resolve      = ctx => Some(ctx.value.age)),
         Field("hobbies", ListType(StringType), resolve = _.value.hobbies),
         Field("address", AddressType, resolve          = _.value.address)
       )
