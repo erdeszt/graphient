@@ -23,7 +23,7 @@ object TestSchema {
 
     trait UserRepo {
       def getUser(id:      Long): Option[User]
-      def createUser(name: String, age: Int, hobbies: List[String], address: Address): User
+      def createUser(name: String, age: Option[Int], hobbies: List[String], address: Address): User
     }
   }
 
@@ -46,7 +46,7 @@ object TestSchema {
       fields[Unit, User](
         Field("id", LongType, resolve                  = _.value.id),
         Field("name", StringType, resolve              = _.value.name),
-        Field("age", IntType, resolve                  = _.value.age),
+        Field("age", OptionType(IntType), resolve      = ctx => Some(ctx.value.age)),
         Field("hobbies", ListType(StringType), resolve = _.value.hobbies),
         Field("address", AddressType, resolve          = _.value.address)
       )
@@ -74,7 +74,7 @@ object TestSchema {
 
     val UserIdArg  = Argument("userId", LongType)
     val NameArg    = Argument("name", StringType)
-    val AgeArg     = Argument("age", IntType)
+    val AgeArg     = Argument("age", OptionInputType(IntType))
     val HobbiesArg = Argument("hobbies", ListInputType(StringType))
     val AddressArg = Argument("address", AddressInputType)
 

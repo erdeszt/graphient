@@ -48,6 +48,16 @@ class VariableGenerator[C, R](schema: Schema[C, R]) extends FieldLookup {
           .toList
           .sequence[Either[GraphqlCallError, ?], ast.Value]
           .map(values => ast.ListValue(values.toVector))
+      case optionInput: OptionInputType[_] =>
+        value.asInstanceOf[Option[_]] match {
+          case None => Either.right(ast.NullValue())
+          case Some(someValue) =>
+            argumentTypeValueToAstValue(
+              argument   = argument,
+              outputType = optionInput.ofType,
+              value      = someValue
+            )
+        }
       case obj: InputObjectType[_] =>
         for {
           objValue <- castIfValid[Map[String, Any]](value).fold[Either[GraphqlCallError, Map[String, Any]]](

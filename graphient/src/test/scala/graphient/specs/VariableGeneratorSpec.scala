@@ -4,6 +4,7 @@ import graphient._
 import graphient.TestSchema.Domain._
 import org.scalatest._
 import sangria.ast
+import sangria.schema.{OptionInputType, OptionType}
 
 class VariableGeneratorSpec extends FunSpec with Matchers {
 
@@ -33,7 +34,7 @@ class VariableGeneratorSpec extends FunSpec with Matchers {
 
     it("should generate valid variable ast for mutations") {
       val testUserName    = "test user"
-      val testUserAge     = 26
+      val testUserAge     = Some(26)
       val testUserHobbies = List("coding")
       val testAddress     = Address(1, "city 1", "main street")
       val variables = variableGenerator
@@ -68,7 +69,7 @@ class VariableGeneratorSpec extends FunSpec with Matchers {
 
       ageVariable.name shouldBe "age"
       ageVariable.value shouldBe a[ast.IntValue]
-      ageVariable.value.asInstanceOf[ast.IntValue].value shouldBe testUserAge
+      ageVariable.value.asInstanceOf[ast.IntValue].value shouldBe testUserAge.get
 
       hobbiesVariable.name shouldBe "hobbies"
       hobbiesVariable.value shouldBe a[ast.ListValue]
@@ -104,7 +105,7 @@ class VariableGeneratorSpec extends FunSpec with Matchers {
     it("should handle missing arguments in mutations") {
       val variables = variableGenerator.generateVariables(
         TestSchema.Mutations.createUser,
-        Map[String, Any]("name" -> "test", "age" -> 34)
+        Map[String, Any]("name" -> "test", "age" -> Some(34))
       )
 
       variables should be('left)
@@ -116,7 +117,7 @@ class VariableGeneratorSpec extends FunSpec with Matchers {
         TestSchema.Mutations.createUser,
         Map[String, Any](
           "name"    -> "test",
-          "age"     -> 34,
+          "age"     -> Some(34),
           "hobbies" -> List("coding", "debugging"),
           "address" -> Map(
             "zip"  -> 1,
@@ -134,7 +135,7 @@ class VariableGeneratorSpec extends FunSpec with Matchers {
         TestSchema.Mutations.createUser,
         Map[String, Any](
           "name"    -> "valid name",
-          "age"     -> "invalid age",
+          "age"     -> Some("invalid age"),
           "hobbies" -> List[String]()
         )
       )
@@ -158,7 +159,7 @@ class VariableGeneratorSpec extends FunSpec with Matchers {
         TestSchema.Mutations.createUser,
         Map[String, Any](
           "name"    -> 1,
-          "age"     -> 42,
+          "age"     -> Some(42),
           "hobbies" -> List[String]()
         )
       )
@@ -172,7 +173,7 @@ class VariableGeneratorSpec extends FunSpec with Matchers {
         TestSchema.Mutations.createUser,
         Map[String, Any](
           "name"    -> "user 1",
-          "age"     -> 42,
+          "age"     -> Some(42),
           "hobbies" -> List[String]("coding"),
           "address" -> "city 1, main street"
         )
