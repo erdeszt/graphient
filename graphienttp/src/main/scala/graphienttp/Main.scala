@@ -12,6 +12,7 @@ import cats.instances.future._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{Future, Promise}
+import scala.util.Failure
 
 object Main {
 
@@ -87,7 +88,10 @@ object Main {
     val response =
       client.runQuery(Query(TestSchema.Queries.getUser), Map[String, Any]("userId" -> 1L)) // GetUserPayload(42L))
 
-    println(response)
+    response.onComplete {
+      case scala.util.Success(r) => println(s"response: $r")
+      case Failure(error)        => println(s"error: $error")
+    }
 
   }
 }
