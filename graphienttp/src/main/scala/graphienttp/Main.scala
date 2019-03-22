@@ -56,10 +56,18 @@ object Main {
           case Right(value) => p.success(value)
         }
       })
-
       f
     }
-    override def asyncF[A](k: (Either[Throwable, A] => Unit) => Future[Unit]): Future[A] = ???
+    override def asyncF[A](k: (Either[Throwable, A] => Unit) => Future[Unit]): Future[A] = {
+      val p = Promise[A]()
+      val f = p.future
+      k(eitherThrowableA => {
+        eitherThrowableA match {
+          case Left(error)  => p.failure(error)
+          case Right(value) => p.success(value)
+        }
+      }).flatMap(_ => f)
+    }
   }
 
   implicit val backend = AkkaHttpBackend()
