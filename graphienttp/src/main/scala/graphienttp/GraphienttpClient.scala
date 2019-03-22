@@ -32,11 +32,10 @@ class GraphienttpClient[S](schema: Schema[S, Unit], endpoint: Uri)(implicit back
 
     val payload = QueryRequest(qJson, variables)
 
-    val request = sttp
+    sttp
       .body(payload)
       .post(endpoint)
-
-    request.send()
+      .send()
   }
 
   def runMutation() = {}
