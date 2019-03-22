@@ -81,7 +81,7 @@ object Main {
       new GraphienttpClient(TestSchema.schema, uri"http://localhost:8080/graphql")
 
     val response =
-      client.runQuery(Query(TestSchema.Queries.getUser), Map[String, Any]("userId" -> 1L)) // GetUserPayload(42L))
+      client.runQuery(Query(TestSchema.Queries.getUser), Map[String, Any]("userId" -> 1L))
 
     response.onComplete {
       case scala.util.Success(r) =>
