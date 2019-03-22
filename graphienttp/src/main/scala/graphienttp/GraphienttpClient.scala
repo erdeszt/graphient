@@ -1,5 +1,5 @@
 package graphienttp
-import cats.effect.Sync
+import cats.effect.{Async, Sync}
 import com.softwaremill.sttp.{sttp, BodySerializer, Id, Request, Response, StringBody, SttpBackend, Uri}
 import graphient._
 import io.circe.Encoder
@@ -25,7 +25,7 @@ object QueryRequest {
 class GraphienttpClient[F[_]](
     schema:         Schema[_, _],
     endpoint:       Uri
-)(implicit backend: SttpBackend[F, Nothing], effect: Sync[F]) {
+)(implicit backend: SttpBackend[F, Nothing], effect: Async[F]) {
 
   val queryGenerator = new QueryGenerator(schema)
 
