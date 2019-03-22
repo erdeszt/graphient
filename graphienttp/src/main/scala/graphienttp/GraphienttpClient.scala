@@ -31,7 +31,7 @@ class GraphienttpClient[F[_]](
 
   def runQuery[P: Encoder](query: Query[_, _], variables: P): F[Response[String]] = {
     queryGenerator.generateQuery(query) match {
-      case Left(error) => effect.raiseError(error)
+      case Left(e) => effect.raiseError(e)
       case Right(q) =>
         val qJson   = QueryRenderer.render(q)
         val payload = QueryRequest(qJson, variables)
@@ -42,6 +42,16 @@ class GraphienttpClient[F[_]](
     }
   }
 
-  def runMutation() = {}
-
+  def runMutation[P: Encoder](mutation: Mutation[_, _], variables: P): F[Response[String]] = {
+    queryGenerator.generateQuery(mutation) match {
+      case Left(e) => effect.raiseError(e)
+      case Right(m) =>
+        val mJson   = QueryRenderer.render(m)
+        val payload = QueryRequest(mJson, variables)
+        sttp
+          .body(payload)
+          .post(endpoint)
+          .send()
+    }
+  }
 }
