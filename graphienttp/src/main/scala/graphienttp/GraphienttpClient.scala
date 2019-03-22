@@ -1,5 +1,5 @@
 package graphienttp
-import com.softwaremill.sttp.{sttp, BodySerializer, Id, Request, StringBody, SttpBackend, Uri}
+import com.softwaremill.sttp.{sttp, BodySerializer, Id, Request, Response, StringBody, SttpBackend, Uri}
 import graphient._
 import io.circe.Encoder
 import io.circe.generic.extras.Configuration
@@ -26,7 +26,7 @@ class GraphienttpClient[S](schema: Schema[S, Unit], endpoint: Uri)(implicit back
 
   val queryGenerator = new QueryGenerator(schema)
 
-  def runQuery[T, P: Encoder](query: Query[S, T], variables: P): Request[String, Nothing] = {
+  def runQuery[T, P: Encoder](query: Query[S, T], variables: P): Id[Response[String]] = {
     val q     = queryGenerator.generateQuery(query) // TODO: work with either, put into for comprehension
     val qJson = QueryRenderer.render(q.right.get)
 
@@ -36,7 +36,7 @@ class GraphienttpClient[S](schema: Schema[S, Unit], endpoint: Uri)(implicit back
       .body(payload)
       .post(endpoint)
 
-    request
+    request.send()
   }
 
   def runMutation() = {}

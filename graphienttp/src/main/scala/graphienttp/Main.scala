@@ -20,10 +20,8 @@ object Main {
     val client = new GraphienttpClient[UserRepo](TestSchema.schema, uri"http://localhost:8080/graphql")
 
     // TODO: Map[String, Any] based implementation for convenience
-    val request: Request[String, Nothing] =
+    val response =
       client.runQuery(Query(TestSchema.Queries.getUser), Map[String, Any]("userId" -> 1L)) // GetUserPayload(42L))
-
-    val response = request.send()
 
     println(response)
 
