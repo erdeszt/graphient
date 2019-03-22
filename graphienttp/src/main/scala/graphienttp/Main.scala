@@ -1,20 +1,19 @@
 package graphienttp
+import akka.actor.ActorSystem
 import cats.effect.ExitCase.Completed
-import cats.effect.{Async, ExitCase, Sync}
-import com.softwaremill.sttp.{HttpURLConnectionBackend, Id, SttpBackend}
-import graphient.{Query, TestSchema}
-import graphient.TestSchema.Domain.UserRepo
+import cats.effect.{Async, ExitCase}
 import com.softwaremill.sttp._
 import com.softwaremill.sttp.akkahttp.AkkaHttpBackend
+import graphient.{Query, TestSchema}
 import io.circe._
-import cats.implicits._
-import cats.instances.future._
 
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{Future, Promise}
 import scala.util.Failure
 
 object Main {
+
+  implicit val system = ActorSystem("graphient-system")
+  implicit val ex     = system.dispatcher
 
   // Note: recall alt + enter to set up alla the boiler plate form implementations
   implicit val syncForFuture = new Async[Future] {
@@ -71,7 +70,7 @@ object Main {
     }
   }
 
-  implicit val backend = AkkaHttpBackend()
+  implicit val backend = AkkaHttpBackend.usingActorSystem(system)
 
   implicit val mapStringAnyEncoder: Encoder[Map[String, Any]] = { _ =>
     Json.fromFields(List("userId" -> Json.fromLong(1L)))
@@ -89,8 +88,12 @@ object Main {
       client.runQuery(Query(TestSchema.Queries.getUser), Map[String, Any]("userId" -> 1L)) // GetUserPayload(42L))
 
     response.onComplete {
-      case scala.util.Success(r) => println(s"response: $r")
-      case Failure(error)        => println(s"error: $error")
+      case scala.util.Success(r) =>
+        println(s"response: $r")
+        system.terminate
+      case Failure(error) =>
+        println(s"error: $error")
+        system.terminate
     }
 
   }
