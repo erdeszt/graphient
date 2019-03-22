@@ -6,6 +6,7 @@ import com.softwaremill.sttp._
 import com.softwaremill.sttp.akkahttp.AkkaHttpBackend
 import graphient.{Query, TestSchema}
 import io.circe._
+import Instances._
 
 import scala.concurrent.{Future, Promise}
 import scala.util.Failure
@@ -71,10 +72,6 @@ object Main {
   }
 
   implicit val backend = AkkaHttpBackend.usingActorSystem(system)
-
-  implicit val mapStringAnyEncoder: Encoder[Map[String, Any]] = { _ =>
-    Json.fromFields(List("userId" -> Json.fromLong(1L)))
-  }
 
   def main(args: Array[String]): Unit = {
 
