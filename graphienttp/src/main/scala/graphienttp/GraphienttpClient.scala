@@ -27,15 +27,16 @@ class GraphienttpClient(schema: Schema[_, _], endpoint: Uri)(implicit backend: S
   val queryGenerator = new QueryGenerator(schema)
 
   def runQuery[P: Encoder](query: Query[_, _], variables: P): Id[Response[String]] = {
-    val q     = queryGenerator.generateQuery(query) // TODO: work with either, put into for comprehension
-    val qJson = QueryRenderer.render(q.right.get)
-
-    val payload = QueryRequest(qJson, variables)
-
-    sttp
-      .body(payload)
-      .post(endpoint)
-      .send()
+    queryGenerator.generateQuery(query) match {
+      case Left(error) => throw error
+      case Right(q) =>
+        val qJson   = QueryRenderer.render(q)
+        val payload = QueryRequest(qJson, variables)
+        sttp
+          .body(payload)
+          .post(endpoint)
+          .send()
+    }
   }
 
   def runMutation() = {}
