@@ -22,11 +22,11 @@ object QueryRequest {
 }
 
 // TODO: Generalize the effect type
-class GraphienttpClient[S](schema: Schema[S, Unit], endpoint: Uri)(implicit backend: SttpBackend[Id, Nothing]) {
+class GraphienttpClient(schema: Schema[_, _], endpoint: Uri)(implicit backend: SttpBackend[Id, Nothing]) {
 
   val queryGenerator = new QueryGenerator(schema)
 
-  def runQuery[T, P: Encoder](query: Query[S, T], variables: P): Id[Response[String]] = {
+  def runQuery[P: Encoder](query: Query[_, _], variables: P): Id[Response[String]] = {
     val q     = queryGenerator.generateQuery(query) // TODO: work with either, put into for comprehension
     val qJson = QueryRenderer.render(q.right.get)
 

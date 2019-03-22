@@ -17,7 +17,7 @@ object Main {
 
     println("ping")
 
-    val client = new GraphienttpClient[UserRepo](TestSchema.schema, uri"http://localhost:8080/graphql")
+    val client = new GraphienttpClient(TestSchema.schema, uri"http://localhost:8080/graphql")
 
     // TODO: Map[String, Any] based implementation for convenience
     val response =
