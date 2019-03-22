@@ -11,7 +11,7 @@ import cats.implicits._
 import cats.instances.future._
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
+import scala.concurrent.{Future, Promise}
 
 object Main {
 
@@ -45,7 +45,20 @@ object Main {
         }
       }
     }
-    override def async[A](k:  (Either[Throwable, A] => Unit) => Unit):         Future[A] = ???
+
+    override def async[A](k: (Either[Throwable, A] => Unit) => Unit): Future[A] = {
+      val p = Promise[A]()
+      val f = p.future
+
+      k(eitherThrowableA => {
+        eitherThrowableA match {
+          case Left(error)  => p.failure(error)
+          case Right(value) => p.success(value)
+        }
+      })
+
+      f
+    }
     override def asyncF[A](k: (Either[Throwable, A] => Unit) => Future[Unit]): Future[A] = ???
   }
 
