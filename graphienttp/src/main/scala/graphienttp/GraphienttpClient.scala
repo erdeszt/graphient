@@ -42,6 +42,7 @@ class GraphienttpClient[F[_]](
     }
   }
 
+  // TODO: Generalize runQuery and runMutation they are nearly similar
   def runMutation[P: Encoder](mutation: Mutation[_, _], variables: P): F[Response[String]] = {
     queryGenerator.generateQuery(mutation) match {
       case Left(e) => effect.raiseError(e)

@@ -4,7 +4,7 @@ import cats.effect.ExitCase.Completed
 import cats.effect.{Async, ExitCase}
 import com.softwaremill.sttp._
 import com.softwaremill.sttp.akkahttp.AkkaHttpBackend
-import graphient.{Query, TestSchema}
+import graphient.{Mutation, Query, TestSchema}
 import io.circe._
 import Instances._
 
@@ -80,17 +80,38 @@ object Main {
     val client =
       new GraphienttpClient(TestSchema.schema, uri"http://localhost:8080/graphql")
 
-    val response =
+    val responseQuery =
       client.runQuery(Query(TestSchema.Queries.getUser), Map[String, Any]("userId" -> 1L))
 
-    response.onComplete {
+    responseQuery.onComplete {
       case scala.util.Success(r) =>
-        println(s"response: $r")
-        system.terminate
+        println(s"responseQuery: $r")
       case Failure(error) =>
-        println(s"error: $error")
-        system.terminate
+        println(s"errorQuery: $error")
     }
+
+    val createUserCallArguments = Map[String, Any](
+      "name"    -> "test user",
+      "age"     -> 26,
+      "hobbies" -> List("coding", "debugging"),
+      "address" -> Map(
+        "zip"    -> 1208,
+        "city"   -> "cph k",
+        "street" -> "ks"
+      )
+    )
+    val responseMutation =
+      client.runMutation(Mutation(TestSchema.Mutations.createUser), createUserCallArguments)
+
+    responseMutation.onComplete {
+      case scala.util.Success(r) =>
+        println(s"responseMutation: $r")
+      case Failure(error) =>
+        println(s"errorQuery: $error")
+    }
+
+    // TODO: clean ^^
+    // TODO: close down properly system.terminate
 
   }
 }
