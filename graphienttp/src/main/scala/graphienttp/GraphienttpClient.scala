@@ -1,4 +1,5 @@
 package graphienttp
+import cats.effect.Sync
 import com.softwaremill.sttp.{sttp, BodySerializer, Id, Request, Response, StringBody, SttpBackend, Uri}
 import graphient._
 import io.circe.Encoder
@@ -21,14 +22,16 @@ object QueryRequest {
   }
 }
 
-// TODO: Generalize the effect type
-class GraphienttpClient(schema: Schema[_, _], endpoint: Uri)(implicit backend: SttpBackend[Id, Nothing]) {
+class GraphienttpClient[F[_]](
+    schema:         Schema[_, _],
+    endpoint:       Uri
+)(implicit backend: SttpBackend[F, Nothing], effect: Sync[F]) {
 
   val queryGenerator = new QueryGenerator(schema)
 
-  def runQuery[P: Encoder](query: Query[_, _], variables: P): Id[Response[String]] = {
+  def runQuery[P: Encoder](query: Query[_, _], variables: P): F[Response[String]] = {
     queryGenerator.generateQuery(query) match {
-      case Left(error) => throw error
+      case Left(error) => effect.raiseError(error)
       case Right(q) =>
         val qJson   = QueryRenderer.render(q)
         val payload = QueryRequest(qJson, variables)
