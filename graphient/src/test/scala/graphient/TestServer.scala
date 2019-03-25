@@ -100,7 +100,7 @@ object TestServer extends KleisliSyntax {
           IO(println(s"Error: ${error.getMessage}\n${error.getStackTrace.mkString("\n")}")) >>
             InternalServerError(ErrorResponse(error.getMessage).asJson)
       })
-      .bindHttp(8080, "0.0.0.0")
+      .bindHttp(8080, "127.0.0.1")
       .withHttpApp(router)
       .serve
       .compile
