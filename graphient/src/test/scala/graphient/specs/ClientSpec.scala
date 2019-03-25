@@ -27,6 +27,7 @@ class ClientSpec extends FunSpec with Matchers with BeforeAndAfterAll {
 
   override def beforeAll() = {
     serverThread = Some(TestServer.run.start.unsafeRunSync)
+    Thread.sleep(3000)
   }
 
   override def afterAll() = {
