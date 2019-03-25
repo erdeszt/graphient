@@ -69,7 +69,7 @@ object TestServer extends KleisliSyntax {
     val router = org.http4s.server
       .Router(
         "/" -> HttpRoutes[IO] {
-          case GET -> Root => OptionT.liftF(Ok("Front page"))
+          case GET -> Root / "status" => OptionT.liftF(Ok("ok"))
           case request @ POST -> Root / "graphql" =>
             val response = request.as[Json].flatMap {
               json =>

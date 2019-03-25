@@ -22,12 +22,16 @@ class ClientSpec extends FunSpec with Matchers with BeforeAndAfterAll {
 
   implicit val contextShift = IO.contextShift(global)
   implicit val timer        = IO.timer(global)
+  implicit val backend      = HttpURLConnectionBackend()
 
   var serverThread = None: Option[Fiber[IO, Unit]]
 
   override def beforeAll() = {
     serverThread = Some(TestServer.run.start.unsafeRunSync)
-    Thread.sleep(3000)
+
+    while (sttp.get(uri"http://localhost:8080/status").send().code != 200) {
+      Thread.sleep(1000)
+    }
   }
 
   override def afterAll() = {
@@ -36,7 +40,6 @@ class ClientSpec extends FunSpec with Matchers with BeforeAndAfterAll {
 
   describe("Client - server integration suite") {
 
-    implicit val backend = HttpURLConnectionBackend()
     implicit val idApplicativeError = new ApplicativeError[Id, Throwable] {
       def raiseError[A](e:       Throwable): Id[A] = throw e
       def handleErrorWith[A](fa: Id[A])(f: Throwable => Id[A]): Id[A] = Try(fa).recover { case error => f(error) }.get
