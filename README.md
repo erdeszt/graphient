@@ -7,7 +7,7 @@
 ```scala
 import graphient._
 
-// Create a query & a varaible generator based on some Sangria schema
+// Create a query & a variable generator based on some Sangria schema
 // For the definition of the TestSchema check: graphient/src/test/scala/graphient/TestSchema.scala
 val queryGenerator = new QueryGenerator(TestSchema)
 val variableGenerator = new VariableGenerator(TestSchema)
@@ -63,4 +63,4 @@ val renderedVariables = unmarshaller.render(variablesForCreateUser.right.toOptio
 // = {name:"user 1",age:26,hobbies:["coding","debugging"]}
 ```
 
-For further examples check `graphient/src/test/scala/graphient/Worksheet.sc` and the specs.
+For further examples check [graphient/src/test/scala/graphient/Worksheet.sc]() and the specs in [grahpeint/src/test]() and [graphient/src/it]().
