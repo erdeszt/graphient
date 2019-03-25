@@ -17,7 +17,12 @@ val getUserCallArguments = Map("userId" -> 1L)
 val createUserCall = MutationByName("createUser")
 val createUserCallArguments = Map[String, Any](
   "name" -> "test user",
-  "age" -> 26,
+  "age" -> Some(26),
+  "address" -> Map[String, Any](
+    "zip" -> 2300,
+    "city" -> "cph",
+    "street" -> "etv"
+  ),
   "hobbies" -> List("coding", "debugging")
 )
 val createUserCallVariables = variableGenerator.generateVariables(

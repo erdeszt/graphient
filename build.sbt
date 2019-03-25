@@ -17,7 +17,6 @@ lazy val graphient = (project in file("graphient"))
       "-language:implicitConversions",
       "-language:postfixOps",
       "-unchecked",
-      "-Xfatal-warnings",
       "-Xfuture",
       "-Xlint",
       "-Yno-adapted-args",
