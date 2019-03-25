@@ -4,7 +4,6 @@ import graphient._
 import graphient.TestSchema.Domain._
 import org.scalatest._
 import sangria.ast
-import sangria.schema.{OptionInputType, OptionType}
 
 class VariableGeneratorSpec extends FunSpec with Matchers {
 

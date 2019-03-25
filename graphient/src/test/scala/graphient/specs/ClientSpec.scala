@@ -1,8 +1,16 @@
-package graphient
+package graphient.specs
 
+import io.circe.Encoder
+import io.circe.generic.semiauto._
 import org.scalatest._
 
-class IntegrationTestSuite extends FunSpec with Matchers {
+class ClientSpec extends FunSpec with Matchers {
+
+  case class GetUserPayload(userId: Long)
+
+  object GetUserPayload {
+    implicit val gupEncoder: Encoder[GetUserPayload] = deriveEncoder[GetUserPayload]
+  }
 
   /*
 

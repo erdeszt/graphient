@@ -1,20 +1,8 @@
 package graphient
+
 import sangria.macros.derive.deriveInputObjectType
-import sangria.marshalling.{CoercedScalaResultMarshaller, FromInput, ResultMarshaller}
-import sangria.schema.{
-  fields,
-  Argument,
-  Field,
-  IntType,
-  ListInputType,
-  ListType,
-  LongType,
-  ObjectType,
-  OptionInputType,
-  OptionType,
-  Schema,
-  StringType
-}
+import sangria.marshalling._
+import sangria.schema._
 
 object TestSchema {
 

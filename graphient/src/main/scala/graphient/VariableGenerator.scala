@@ -8,14 +8,6 @@ import scala.reflect.ClassTag
 
 class VariableGenerator[C, R](schema: Schema[C, R]) extends FieldLookup {
 
-  private def castIfValid[S: ClassTag](value: Any): Option[S] = {
-    if (implicitly[ClassTag[S]].runtimeClass.isInstance(value)) {
-      Some(value.asInstanceOf[S])
-    } else {
-      None
-    }
-  }
-
   case class ScalarArgument(argument: Argument[_], value: Any) {
     def apply[A: ClassTag](wrapper: A => ast.Value): Either[GraphqlCallError, ast.Value] = {
       castIfValid[A](value).fold {
@@ -23,6 +15,46 @@ class VariableGenerator[C, R](schema: Schema[C, R]) extends FieldLookup {
       } { validValue =>
         Right(wrapper(validValue)): Either[GraphqlCallError, ast.Value]
       }
+    }
+  }
+
+  def generateVariables[Ctx, T](
+      field:          Field[Ctx, T],
+      variableValues: Map[String, Any]
+  ): Either[GraphqlCallError, ast.Value] = {
+    field.arguments
+      .map { argument =>
+        variableValues.get(argument.name) match {
+          case None => Left(ArgumentNotFound(argument))
+          case Some(value) =>
+            argumentTypeValueToAstValue(argument, argument.argumentType, value).map { argumentAst =>
+              (argument.name, argumentAst)
+            }
+        }
+      }
+      .sequence[Either[GraphqlCallError, ?], (String, ast.Value)]
+      .map(fields => ast.ObjectValue(fields: _*))
+  }
+
+  def generateVariables(
+      call:           NamedGraphqlCall,
+      variableValues: Map[String, Any]
+  ): Either[GraphqlCallError, ast.Value] = {
+    getField(schema, call).flatMap(generateVariables(_, variableValues))
+  }
+
+  def generateVariables[Ctx, T](
+      call:           GraphqlCall[Ctx, T],
+      variableValues: Map[String, Any]
+  ): Either[GraphqlCallError, ast.Value] = {
+    generateVariables(call.field, variableValues)
+  }
+
+  private def castIfValid[S: ClassTag](value: Any): Option[S] = {
+    if (implicitly[ClassTag[S]].runtimeClass.isInstance(value)) {
+      Some(value.asInstanceOf[S])
+    } else {
+      None
     }
   }
 
@@ -84,38 +116,6 @@ class VariableGenerator[C, R](schema: Schema[C, R]) extends FieldLookup {
       case _ =>
         throw new Exception("WIP Unsupported argument type")
     }
-  }
-
-  def generateVariables[Ctx, T](
-      field:          Field[Ctx, T],
-      variableValues: Map[String, Any]
-  ): Either[GraphqlCallError, ast.Value] = {
-    field.arguments
-      .map { argument =>
-        variableValues.get(argument.name) match {
-          case None => Left(ArgumentNotFound(argument))
-          case Some(value) =>
-            argumentTypeValueToAstValue(argument, argument.argumentType, value).map { argumentAst =>
-              (argument.name, argumentAst)
-            }
-        }
-      }
-      .sequence[Either[GraphqlCallError, ?], (String, ast.Value)]
-      .map(fields => ast.ObjectValue(fields: _*))
-  }
-
-  def generateVariables(
-      call:           NamedGraphqlCall,
-      variableValues: Map[String, Any]
-  ): Either[GraphqlCallError, ast.Value] = {
-    getField(schema, call).flatMap(generateVariables(_, variableValues))
-  }
-
-  def generateVariables[Ctx, T](
-      call:           GraphqlCall[Ctx, T],
-      variableValues: Map[String, Any]
-  ): Either[GraphqlCallError, ast.Value] = {
-    generateVariables(call.field, variableValues)
   }
 
 }

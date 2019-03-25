@@ -5,7 +5,7 @@ import cats.effect._
 import cats.implicits._
 import graphient.TestSchema.Domain
 import graphient.TestSchema.Domain.UserRepo
-import io.circe.Json
+import io.circe.{Json, _}
 import io.circe.generic.semiauto._
 import io.circe.optics.JsonPath._
 import io.circe.syntax._
@@ -14,7 +14,6 @@ import org.http4s.circe._
 import org.http4s.dsl.io._
 import org.http4s.server.blaze.BlazeServerBuilder
 import org.http4s.syntax.KleisliSyntax
-import io.circe._
 import sangria.ast.Document
 import sangria.execution._
 import sangria.marshalling.circe._

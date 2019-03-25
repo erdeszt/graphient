@@ -2,7 +2,7 @@ package graphient
 
 import sangria.schema._
 
-trait FieldLookup {
+private[graphient] trait FieldLookup {
 
   def getField[Ctx](schema: Schema[Ctx, _], call: NamedGraphqlCall): Either[GraphqlCallError, Field[Ctx, _]] = {
     val fieldLookup = call match {

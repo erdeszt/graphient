@@ -1,11 +1,10 @@
 import Dependencies._
 
 lazy val graphient = (project in file("graphient"))
-  .configs(IntegrationTest)
   .settings(
     name := "graphient",
     scalaVersion := "2.12.6",
-    version := "0.1.1",
+    version := "0.1.2",
     scalacOptions ++= Seq(
       "-deprecation",
       "-encoding",
@@ -41,8 +40,8 @@ lazy val graphient = (project in file("graphient"))
     libraryDependencies ++= cats,
     libraryDependencies ++= sttp,
     libraryDependencies ++= scalaTest.map(_ % Test),
-    libraryDependencies ++= scalaTest.map(_ % IntegrationTest),
-    libraryDependencies ++= http4s.map(_ % IntegrationTest)
+    libraryDependencies ++= circeOptics.map(_ % Test),
+    libraryDependencies ++= http4s.map(_ % Test)
   )
 
 lazy val root = (project in file(".")).aggregate(graphient)

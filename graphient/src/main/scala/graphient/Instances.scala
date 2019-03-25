@@ -10,11 +10,16 @@ object Instances {
 
   private def convertValue(value: Any): Json = {
     value match {
-      case str:    String => Json.fromString(str)
-      case float:  Float => unsafe(Json.fromFloat(float), "float")
-      case double: Double => unsafe(Json.fromDouble(double), "double")
-      case int:    Int => Json.fromInt(int)
-      case long:   Long => Json.fromLong(long)
+      case str: String =>
+        Json.fromString(str)
+      case float: Float =>
+        unsafe(Json.fromFloat(float), "float")
+      case double: Double =>
+        unsafe(Json.fromDouble(double), "double")
+      case int: Int =>
+        Json.fromInt(int)
+      case long: Long =>
+        Json.fromLong(long)
       case option: Option[_] =>
         option match {
           case None             => Json.Null
@@ -30,8 +35,6 @@ object Instances {
     }
   }
 
-  implicit val mapStringAnyEncoder: Encoder[Map[String, Any]] = { values =>
-    convertValue(values)
-  }
+  implicit val mapOfStringToAnyCirceEncoder: Encoder[Map[String, Any]] = convertValue
 
 }
