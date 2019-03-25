@@ -29,13 +29,17 @@ class ClientSpec extends FunSpec with Matchers with BeforeAndAfterAll {
   override def beforeAll() = {
     serverThread = Some(TestServer.run.start.unsafeRunSync)
 
-    while (sttp.get(uri"http://localhost:8080/status").send().code != 200) {
+    while (!isServerUp()) {
       Thread.sleep(1000)
     }
   }
 
   override def afterAll() = {
     serverThread.foreach(_.cancel.unsafeRunSync)
+  }
+
+  private def isServerUp(): Boolean = {
+    Try(sttp.get(uri"http://localhost:8080/status").send().code == 200).getOrElse(false)
   }
 
   describe("Client - server integration suite") {
