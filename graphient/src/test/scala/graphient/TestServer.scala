@@ -18,66 +18,59 @@ import sangria.ast.Document
 import sangria.execution._
 import sangria.marshalling.circe._
 import sangria.parser.QueryParser
-
 import scala.concurrent.ExecutionContext.Implicits.global
 
-object TestServer extends IOApp with KleisliSyntax {
+object TestServer extends KleisliSyntax {
 
   case class ErrorResponse(error: String)
+
+  implicit val contextShift = IO.contextShift(global)
+  implicit val timer        = IO.timer(global)
 
   implicit val (errorResponseEncoder, errorResponseDecoders) = {
     (deriveEncoder[ErrorResponse], deriveDecoder[ErrorResponse])
   }
 
+  val fakeUser = Domain.User(
+    id      = 12L,
+    name    = "test",
+    age     = 123,
+    hobbies = List("1231321", "123"),
+    address = Domain.Address(
+      zip    = 2300,
+      city   = "cph",
+      street = "et"
+    )
+  )
+
+  object FakeUserRepo extends UserRepo {
+    def getUser(id: Long): Option[Domain.User] = { Some(fakeUser) }
+
+    def createUser(
+        name:    String,
+        age:     Option[Int],
+        hobbies: List[String],
+        address: Domain.Address
+    ): Domain.User = { fakeUser }
+  }
+
   private def executeQuery(query: Document, op: Option[String], vars: Option[JsonObject]) = {
-    val apiService = new UserRepo {
-      override def getUser(id: Long): Option[Domain.User] = {
-        Some(
-          Domain.User(
-            id      = 12L,
-            name    = "test",
-            age     = 123,
-            hobbies = List("1231321", "123"),
-            address = Domain.Address(
-              zip    = 2300,
-              city   = "cph",
-              street = "et"
-            )
-          ))
-
-      }
-
-      override def createUser(
-          name:    String,
-          age:     Option[Int],
-          hobbies: List[String],
-          address: Domain.Address
-      ): Domain.User = {
-        Domain.User(
-          id      = 12L,
-          name    = name,
-          age     = age.getOrElse(100),
-          hobbies = hobbies,
-          address = address
-        )
-      }
-    }
     Executor
       .execute(
         TestSchema.schema,
         query,
-        apiService,
+        FakeUserRepo,
         operationName = op,
         variables     = Json.fromJsonObject(vars.getOrElse(JsonObject.empty))
       )
   }
 
-  def run(args: List[String]): IO[ExitCode] = {
+  def run: IO[Unit] = {
     val router = org.http4s.server
       .Router(
         "/" -> HttpRoutes[IO] {
           case GET -> Root => OptionT.liftF(Ok("Front page"))
-          case request @ (POST -> Root / "graphql") =>
+          case request @ POST -> Root / "graphql" =>
             val response = request.as[Json].flatMap {
               json =>
                 val query     = root.query.string.getOption(json).get
@@ -112,7 +105,6 @@ object TestServer extends IOApp with KleisliSyntax {
       .serve
       .compile
       .drain
-      .as(ExitCode.Success)
   }
 
 }

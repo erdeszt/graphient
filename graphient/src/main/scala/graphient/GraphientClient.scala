@@ -1,5 +1,6 @@
 package graphient
 
+import cats.ApplicativeError
 import cats.effect.Async
 import com.softwaremill.sttp._
 import io.circe.Encoder
@@ -9,7 +10,7 @@ import sangria.schema.Schema
 class GraphientClient[F[_]](
     schema:         Schema[_, _],
     endpoint:       Uri
-)(implicit backend: SttpBackend[F, _], effect: Async[F]) {
+)(implicit backend: SttpBackend[F, _], effect: ApplicativeError[F, Throwable]) {
 
   private val queryGenerator = new QueryGenerator(schema)
 

@@ -2,7 +2,7 @@ package graphient
 
 import io.circe.{Encoder, Json}
 
-object Instances {
+object Implicits {
 
   private def unsafe(x: Option[Json], `type`: String): Json = {
     x.getOrElse(throw new Exception(s"Invalid ${`type`} value"))

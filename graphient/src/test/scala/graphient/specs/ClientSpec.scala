@@ -1,10 +1,18 @@
 package graphient.specs
 
+import cats.ApplicativeError
+import com.softwaremill.sttp._
+import cats.effect.{Fiber, IO}
+import graphient._
+import graphient.Implicits._
 import io.circe.Encoder
 import io.circe.generic.semiauto._
 import org.scalatest._
 
-class ClientSpec extends FunSpec with Matchers {
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.util.Try
+
+class ClientSpec extends FunSpec with Matchers with BeforeAndAfterAll {
 
   case class GetUserPayload(userId: Long)
 
@@ -12,46 +20,51 @@ class ClientSpec extends FunSpec with Matchers {
     implicit val gupEncoder: Encoder[GetUserPayload] = deriveEncoder[GetUserPayload]
   }
 
-  /*
+  implicit val contextShift = IO.contextShift(global)
+  implicit val timer        = IO.timer(global)
 
-    val client =
-      new GraphienttpClient(TestSchema.schema, uri"http://localhost:8080/graphql")
+  var serverThread = None: Option[Fiber[IO, Unit]]
 
-    val responseQuery =
-      client.runQuery(Query(TestSchema.Queries.getUser), Map[String, Any]("userId" -> 1L))
+  override def beforeAll() = {
+    serverThread = Some(TestServer.run.start.unsafeRunSync)
+  }
 
-    responseQuery.onComplete {
-      case scala.util.Success(r) =>
-        println(s"responseQuery: $r")
-      case Failure(error) =>
-        println(s"errorQuery: $error")
-    }
-
-    val createUserCallArguments = Map[String, Any](
-      "name"    -> "test user",
-      "age"     -> 26,
-      "hobbies" -> List("coding", "debugging"),
-      "address" -> Map(
-        "zip"    -> 1208,
-        "city"   -> "cph k",
-        "street" -> "ks"
-      )
-    )
-    val responseMutation =
-      client.runMutation(Mutation(TestSchema.Mutations.createUser), createUserCallArguments)
-
-    responseMutation.onComplete {
-      case scala.util.Success(r) =>
-        println(s"responseMutation: $r")
-      case Failure(error) =>
-        println(s"errorQuery: $error")
-    }
-   */
+  override def afterAll() = {
+    serverThread.foreach(_.cancel.unsafeRunSync)
+  }
 
   describe("Client - server integration suite") {
 
-    it("should work") {
-      true shouldBe true
+    implicit val backend = HttpURLConnectionBackend()
+    implicit val idApplicativeError = new ApplicativeError[Id, Throwable] {
+      def raiseError[A](e:       Throwable): Id[A] = throw e
+      def handleErrorWith[A](fa: Id[A])(f: Throwable => Id[A]): Id[A] = Try(fa).recover { case error => f(error) }.get
+      def pure[A](x:             A): Id[A] = x
+      def ap[A, B](ff:           Id[A => B])(fa: Id[A]): Id[B] = ff(fa)
+    }
+
+    val client = new GraphientClient(TestSchema.schema, uri"http://localhost:8080/graphql")
+
+    it("querying through the client") {
+      val response = client.call(Query(TestSchema.Queries.getUser), Map[String, Any]("userId" -> 1L))
+
+      response.code shouldBe 200
+    }
+
+    it("mutating through the client") {
+      val parameters = Map[String, Any](
+        "name" -> "test user",
+        "age"  -> Some(26),
+        "address" -> Map[String, Any](
+          "zip"    -> 2300,
+          "city"   -> "cph",
+          "street" -> "etv"
+        ),
+        "hobbies" -> List("coding", "debugging")
+      )
+      val response = client.call(Mutation(TestSchema.Mutations.createUser), parameters)
+
+      response.code shouldBe 200
     }
 
   }
