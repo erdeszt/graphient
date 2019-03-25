@@ -14,7 +14,7 @@ package graphient {
   case class QueryByName(field:    String) extends NamedGraphqlCall
   case class MutationByName(field: String) extends NamedGraphqlCall
 
-  sealed trait GraphqlCallError
+  sealed trait GraphqlCallError extends Throwable
   case class FieldNotFound(graphqlCall:         NamedGraphqlCall) extends GraphqlCallError
   case class ArgumentNotFound[T](argument:      Argument[T]) extends GraphqlCallError
   case class ArgumentFieldNotFound[T](argument: Argument[T], field: String) extends GraphqlCallError
