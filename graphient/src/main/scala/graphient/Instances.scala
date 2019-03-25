@@ -1,4 +1,4 @@
-package graphienttp
+package graphient
 
 import io.circe.{Encoder, Json}
 

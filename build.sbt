@@ -1,42 +1,49 @@
 import Dependencies._
 
-lazy val commonSettings = Seq(
-  scalaVersion := "2.12.6",
-  version := "0.1.1",
-  scalacOptions ++= Seq(
-    "-Ypartial-unification",
-    "-explaintypes",
-    "-language:higherKinds",
-    "-Xlint"
-  ),
-  resolvers += Resolver.sonatypeRepo("releases"),
-  addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.9.7")
-)
-
-lazy val graphient = (project in file("graphient")).
-  settings(
+lazy val graphient = (project in file("graphient"))
+  .configs(IntegrationTest)
+  .settings(
     name := "graphient",
-    commonSettings,
+    scalaVersion := "2.12.6",
+    version := "0.1.1",
+    scalacOptions ++= Seq(
+      "-deprecation",
+      "-encoding",
+      "utf-8",
+      "-explaintypes",
+      "-feature",
+      "-language:existentials",
+      "-language:higherKinds",
+      "-language:implicitConversions",
+      "-language:postfixOps",
+      "-unchecked",
+      "-Xfatal-warnings",
+      "-Xfuture",
+      "-Xlint",
+      "-Yno-adapted-args",
+      "-Ypartial-unification",
+      "-Ywarn-extra-implicit",
+      "-Ywarn-inaccessible",
+      "-Ywarn-infer-any",
+      "-Ywarn-nullary-override",
+      "-Ywarn-nullary-unit",
+      "-Ywarn-numeric-widen",
+      "-Ywarn-unused:implicits",
+      "-Ywarn-unused:imports",
+      "-Ywarn-unused:locals",
+      "-Ywarn-unused:patvars",
+      "-Ywarn-unused:privates",
+      "-Ywarn-value-discard",
+    ),
+    resolvers += Resolver.sonatypeRepo("releases"),
+    addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.9.7"),
     libraryDependencies ++= sangria,
     libraryDependencies ++= circe,
-    libraryDependencies += cats,
-    libraryDependencies += catsEffect,
-    libraryDependencies += scalaTest % Test,
+    libraryDependencies ++= cats,
     libraryDependencies ++= sttp,
-    libraryDependencies ++= http4s
+    libraryDependencies ++= scalaTest.map(_ % Test),
+    libraryDependencies ++= scalaTest.map(_ % IntegrationTest),
+    libraryDependencies ++= http4s.map(_ % IntegrationTest)
   )
 
-lazy val graphienttp = (project in file("graphienttp")).
-  settings(
-    name := "graphienttp",
-    commonSettings,
-    libraryDependencies ++= sangria,
-    libraryDependencies ++= circe,
-    libraryDependencies += cats,
-    libraryDependencies += catsEffect,
-    libraryDependencies += scalaTest % Test,
-    libraryDependencies ++= sttp,
-    libraryDependencies ++= http4s
-  ).dependsOn(graphient)
-
-lazy val root = (project in file(".")).aggregate(graphient, graphienttp)
+lazy val root = (project in file(".")).aggregate(graphient)

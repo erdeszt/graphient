@@ -1,4 +1,5 @@
 package graphienttp
+
 import cats.effect.{Async, Sync}
 import com.softwaremill.sttp.{sttp, BodySerializer, Id, Request, Response, StringBody, SttpBackend, Uri}
 import graphient._
