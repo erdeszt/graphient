@@ -1,7 +1,6 @@
 package graphient
 
 import cats.ApplicativeError
-import cats.effect.Async
 import com.softwaremill.sttp._
 import io.circe.Encoder
 import sangria.renderer.QueryRenderer
@@ -14,17 +13,18 @@ class GraphientClient[F[_]](
 
   private val queryGenerator = new QueryGenerator(schema)
 
-  def call[P: Encoder](call: GraphqlCall[_, _], variables: P): F[Response[String]] = {
+  def call[P: Encoder](call: GraphqlCall[_, _], variables: P): F[RequestT[Id, String, Nothing]] = {
     queryGenerator.generateQuery(call) match {
       case Left(error) => effect.raiseError(error)
       case Right(query) =>
         val renderedQuery = QueryRenderer.render(query)
         val payload       = GraphqlRequest(renderedQuery, variables)
 
-        sttp
-          .body(payload)
-          .post(endpoint)
-          .send()
+        effect.pure(
+          sttp
+            .body(payload)
+            .post(endpoint)
+        )
     }
 
   }

@@ -54,7 +54,8 @@ class ClientSpec extends FunSpec with Matchers with BeforeAndAfterAll {
     val client = new GraphientClient(TestSchema.schema, uri"http://localhost:8080/graphql")
 
     it("querying through the client") {
-      val response = client.call(Query(TestSchema.Queries.getUser), Map[String, Any]("userId" -> 1L))
+      val response: Id[Response[String]] =
+        client.call(Query(TestSchema.Queries.getUser), Map[String, Any]("userId" -> 1L)).send()
 
       response.code shouldBe 200
     }
@@ -70,7 +71,7 @@ class ClientSpec extends FunSpec with Matchers with BeforeAndAfterAll {
         ),
         "hobbies" -> List("coding", "debugging")
       )
-      val response = client.call(Mutation(TestSchema.Mutations.createUser), parameters)
+      val response = client.call(Mutation(TestSchema.Mutations.createUser), parameters).send()
 
       response.code shouldBe 200
     }
