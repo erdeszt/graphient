@@ -60,6 +60,15 @@ class ClientSpec extends FunSpec with Matchers with BeforeAndAfterAll {
       response.code shouldBe 200
     }
 
+    it("querying through the client for not arguments and scalar output") {
+      val response: Id[Response[String]] =
+        client.call(Query(TestSchema.Queries.getLong), Map[String, Any]()).send()
+
+      response.code shouldBe 200
+      response.body shouldBe 'right
+      response.body.right.get shouldBe "{\"data\":{\"getLong\":420}}"
+    }
+
     it("mutating through the client") {
       val parameters = Map[String, Any](
         "name" -> "test user",

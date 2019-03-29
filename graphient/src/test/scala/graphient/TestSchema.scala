@@ -93,11 +93,20 @@ object TestSchema {
         resolve   = request => request.ctx.getUser(request.args.arg(UserIdArg))
       )
 
+    val getLong: Field[UserRepo, Unit] =
+      Field(
+        "getLong",
+        LongType,
+        arguments = Nil,
+        resolve   = _ => 420L
+      )
+
     val schema: ObjectType[UserRepo, Unit] =
       ObjectType(
         "Query",
         fields[UserRepo, Unit](
-          getUser
+          getUser,
+          getLong
         )
       )
 

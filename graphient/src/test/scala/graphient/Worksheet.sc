@@ -31,7 +31,7 @@ val createUserCallArguments = Map[String, Any](
 )
 
 // Generate the mutation for createUser
-val createUserMutation = queryGenerator.generateQuery(Mutation(TestSchema.Mutations.createUser)).right.toOption.get,
+val createUserMutation = queryGenerator.generateQuery(Mutation(TestSchema.Mutations.createUser)).right.toOption.get
 
 // Generate variables for the createUser mutation
 val createUserCallVariables = variableGenerator.generateVariables(
@@ -76,3 +76,5 @@ unmarshaller.render(
 // Generate query for the example query and mutation
 QueryRenderer.render(queryGenerator.generateQuery(QueryByName("getUser")).right.toOption.get)
 QueryRenderer.render(queryGenerator.generateQuery(createUserCall).right.toOption.get)
+
+QueryRenderer.render(queryGenerator.generateQuery(Query(TestSchema.Queries.getLong)).right.get)

@@ -81,6 +81,8 @@ class QueryGenerator[C, R](schema: Schema[C, R]) extends FieldLookup {
     }
 
     outputType match {
+      case scalar: ScalarType[_] =>
+        Vector()
       case obj: ObjectType[_, _] =>
         val fieldAsts = obj.fields.map(generateFieldSelectionAst)
         Vector(fieldAsts: _*)

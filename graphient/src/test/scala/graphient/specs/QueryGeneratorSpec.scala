@@ -86,6 +86,20 @@ class QueryGeneratorSpec extends FunSpec with Matchers {
 
     }
 
+    describe("full output type support") {
+
+      it("should support Long output type") {
+        val queryAst = queryGenerator.generateQuery(Query(TestSchema.Queries.getLong))
+
+        queryAst should be('right)
+
+        val violations = QueryValidator.default.validateQuery(TestSchema.schema, queryAst.right.toOption.get)
+
+        violations shouldBe empty
+      }
+
+    }
+
   }
 
 }
