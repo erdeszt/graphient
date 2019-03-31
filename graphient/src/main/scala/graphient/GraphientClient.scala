@@ -1,7 +1,6 @@
 package graphient
 
 import cats.implicits._
-import cats.ApplicativeError
 import io.circe.parser.decode
 import com.softwaremill.sttp._
 import io.circe.{Decoder, Encoder}
@@ -38,12 +37,14 @@ class GraphientClient[F[_]](
     for {
       request <- this.call(call, variables)
       rawResponse <- request.send()
-      response <- rawResponse.body.flatMap(decode[RawGraphqlResponse[T]](_).bimap(_.toString, identity)) match {
-        case Left(error) => effect.raiseError(new Exception(error)) // TODO: Better error type
+      rawResponseBody     = rawResponse.body.bimap(GraphqlClientError, identity)
+      decodedResponseBody = rawResponseBody.flatMap(decode[RawGraphqlResponse[T]])
+      response <- decodedResponseBody match {
+        case Left(error) => effect.raiseError(error)
         case Right(response) =>
           (response.errors, response.data) match {
             case (None, None) =>
-              effect.raiseError(new Exception("Inconsistent response (no data, no errors)")) // TODO: Better error type
+              effect.raiseError(GraphqlClientError("Inconsistent response (no data, no errors)"))
             case (Some(errors), _)  => effect.pure(Left(errors))
             case (None, Some(data)) => effect.pure(Right(data))
           }
