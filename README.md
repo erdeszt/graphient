@@ -4,6 +4,14 @@
 
 
 ### Usage:
+
+#### Add the package to your build:
+
+```scala
+libraryDependencies += "graphient" %% "graphient" % "0.1.8"
+resolvers += Resolver.bintrayRepo("erdeszt", "io.github.erdeszt")
+```
+
 ```scala
 import graphient._
 
