@@ -4,7 +4,7 @@ lazy val graphient = (project in file("graphient"))
   .settings(
     name := "graphient",
     scalaVersion := "2.12.6",
-    version := "0.1.5",
+    version := "0.1.8",
     scalacOptions ++= Seq(
       "-deprecation",
       "-encoding",
@@ -35,6 +35,7 @@ lazy val graphient = (project in file("graphient"))
     ),
     resolvers += Resolver.sonatypeRepo("releases"),
     bintrayRepository := "io.github.erdeszt",
+    organization := "io.github.erdeszt",
     licenses += ("MIT", url("http://opensource.org/licenses/MIT")),
     addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.9.7"),
     libraryDependencies ++= sangria,

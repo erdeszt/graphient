@@ -7,6 +7,9 @@ import sangria.schema._
 object TestSchema {
 
   object Domain {
+
+    case class ImageId(value: Long)
+
     case class User(
         id:      Long,
         name:    String,
@@ -29,6 +32,9 @@ object TestSchema {
 
   object Types {
     import Domain._
+
+    val ImageId: ScalarAlias[ImageId, Long] =
+      ScalarAlias[ImageId, Long](LongType, _.value, value => Right(Domain.ImageId(value)))
 
     val AddressType = ObjectType(
       "address",
@@ -101,12 +107,21 @@ object TestSchema {
         resolve   = _ => 420L
       )
 
+    val getImageId: Field[UserRepo, Unit] =
+      Field(
+        "getImageId",
+        Types.ImageId,
+        arguments = Nil,
+        resolve   = _ => Domain.ImageId(123)
+      )
+
     val schema: ObjectType[UserRepo, Unit] =
       ObjectType(
         "Query",
         fields[UserRepo, Unit](
           getUser,
-          getLong
+          getLong,
+          getImageId
         )
       )
 
