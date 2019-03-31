@@ -26,6 +26,7 @@ val client = new GraphientClient(TestSchema.schema, uri"http://yourapi.com/graph
 // `request` is a normal sttp request with the body set to the generated graphql query
 // and content type set to application/json. You can add authorization or other
 // headers before sending the request
+// You can also use any type that is circe encodable as the parameters
 val request = client.call(Query(TestSchema.Queries.getUser), Params("userId" -> 1L))
 
 // When you are ready, send the request to receive the response. You will need to
