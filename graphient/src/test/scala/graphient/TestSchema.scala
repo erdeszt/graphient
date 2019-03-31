@@ -4,6 +4,8 @@ import sangria.macros.derive.deriveInputObjectType
 import sangria.marshalling._
 import sangria.schema._
 
+import scala.concurrent.Future
+
 object TestSchema {
 
   object Domain {
@@ -115,13 +117,22 @@ object TestSchema {
         resolve   = _ => Domain.ImageId(123)
       )
 
+    val raiseError: Field[UserRepo, Unit] =
+      Field(
+        "raiseError",
+        LongType,
+        arguments = Nil,
+        resolve   = _ => Future.failed(new Exception("OOPS"))
+      )
+
     val schema: ObjectType[UserRepo, Unit] =
       ObjectType(
         "Query",
         fields[UserRepo, Unit](
           getUser,
           getLong,
-          getImageId
+          getImageId,
+          raiseError
         )
       )
 

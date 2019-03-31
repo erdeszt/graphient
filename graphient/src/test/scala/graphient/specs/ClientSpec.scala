@@ -1,15 +1,12 @@
 package graphient.specs
 
-import cats.ApplicativeError
-import com.softwaremill.sttp._
 import cats.effect.{Fiber, IO}
+import com.softwaremill.sttp._
 import graphient._
 import graphient.Implicits._
-import io.circe.parser.decode
 import io.circe.Encoder
 import io.circe.generic.semiauto._
 import org.scalatest._
-
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.Try
 
@@ -45,11 +42,25 @@ class ClientSpec extends FunSpec with Matchers with BeforeAndAfterAll {
 
   describe("Client - server integration suite") {
 
-    implicit val idApplicativeError = new ApplicativeError[Id, Throwable] {
+    case class EmptyResponse()
+
+    implicit val emptyResponseDecoder = deriveDecoder[EmptyResponse]
+
+    case class GetLongResponse(getLong: Long)
+
+    implicit val getLongDecoder = deriveDecoder[GetLongResponse]
+
+    implicit val idApplicativeError = new cats.MonadError[Id, Throwable] {
       def raiseError[A](e:       Throwable): Id[A] = throw e
       def handleErrorWith[A](fa: Id[A])(f: Throwable => Id[A]): Id[A] = Try(fa).recover { case error => f(error) }.get
       def pure[A](x:             A): Id[A] = x
-      def ap[A, B](ff:           Id[A => B])(fa: Id[A]): Id[B] = ff(fa)
+      def flatMap[A, B](fa:      Id[A])(f: A => Id[B]): Id[B] = f(fa)
+      def tailRecM[A, B](a:      A)(f: A => Id[Either[A, B]]): Id[B] = {
+        f(a) match {
+          case Left(nextA) => tailRecM(nextA)(f)
+          case Right(last) => last
+        }
+      }
     }
 
     val client = new GraphientClient(TestSchema.schema, uri"http://localhost:8080/graphql")
@@ -70,20 +81,30 @@ class ClientSpec extends FunSpec with Matchers with BeforeAndAfterAll {
       response.body.right.get shouldBe "{\"data\":{\"getLong\":420}}"
     }
 
-    it("decoding to GraphqlResponse should work") {
-      case class GetLongResponse(getLong: Long)
-      implicit val getLongDecoder = deriveDecoder[GetLongResponse]
-      val response: Id[Response[String]] =
-        client.call(Query(TestSchema.Queries.getLong), Params()).send()
+    it("decoding to response") {
+      val response = client.callAndDecode[Params.T, GetLongResponse](Query(TestSchema.Queries.getLong), Params())
 
-      response.code shouldBe 200
-
-      val body = response.body.flatMap(decode[GraphqlResponse[GetLongResponse]])
-
-      body shouldBe 'right
-      body.right.get.data.getLong shouldBe 420
+      response shouldBe 'right
+      response.right.get.getLong shouldBe 420
     }
 
+    it("decoding error response") {
+      val response = client.callAndDecode[Params.T, GetLongResponse](Query(TestSchema.Queries.raiseError), Params())
+
+      response shouldBe 'left
+
+      val errors = response.left.get
+
+      errors should have length 1
+
+      val onlyError = errors.head
+
+      onlyError.message shouldBe "Internal server error"
+
+      response.left.get.head.path should contain theSameElementsInOrderAs List("raiseError")
+    }
+
+    // TODO: Check for errors
     it("mutating through the client") {
       val parameters = Params(
         "name" -> "test user",
@@ -95,9 +116,10 @@ class ClientSpec extends FunSpec with Matchers with BeforeAndAfterAll {
         ),
         "hobbies" -> List("coding", "debugging")
       )
-      val response = client.call(Mutation(TestSchema.Mutations.createUser), parameters).send()
+      val response =
+        client.callAndDecode[Params.T, EmptyResponse](Mutation(TestSchema.Mutations.createUser), parameters)
 
-      response.code shouldBe 200
+      response shouldBe 'right
     }
 
   }

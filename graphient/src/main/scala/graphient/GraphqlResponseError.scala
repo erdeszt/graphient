@@ -1,3 +1,3 @@
 package graphient
 
-case class GraphqlResponseError()
+case class GraphqlResponseError(message: String, path: List[String], locations: List[GraphqlResponseErrorLocation])
