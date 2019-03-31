@@ -19,8 +19,10 @@ import graphient._
 import graphient.Implicits._
 // Also import your preferred sttp backend
 
+// For the definition of the TestSchema check: graphient/src/test/scala/graphient/TestSchema.scala
 val client = new GraphientClient(TestSchema.schema, uri"http://yourapi.com/graphql")
 
+// Using the raw sttp api:
 // `request` is a normal sttp request with the body set to the generated graphql query
 // and content type set to application/json. You can add authorization or other
 // headers before sending the request
@@ -29,6 +31,13 @@ val request = client.call(Query(TestSchema.Queries.getUser), Params("userId" -> 
 // When you are ready, send the request to receive the response. You will need to
 // decode the json response.
 val response = request.send()
+
+// Using the higher level api (with circe decoding):
+case class GetLongResponse(getLong: Long)
+implicit val getLongResponseDecoder: Decoder[GetLongResponse] = deriveDecoder[GetLongResponse]
+
+// `responseData` is an Either[List[GraphqlResponseError], GetLongResponse]
+val responseData = client.callAndDecode[Params.T, GetLongResponse](Query(TestSchema.Queries.getLong), Params())
 
 ```
 
