@@ -21,8 +21,15 @@ import graphient.Implicits._
 
 val client = new GraphientClient(TestSchema.schema, uri"http://yourapi.com/graphql")
 
-// Response is a normal sttp response
-val response = client.call(Query(TestSchema.Queries.getUser), Params("userId" -> 1L))
+// `request` is a normal sttp request with the body set to the generated graphql query
+// and content type set to application/json. You can add authorization or other
+// headers before sending the request
+val request = client.call(Query(TestSchema.Queries.getUser), Params("userId" -> 1L))
+
+// When you are ready, send the request to receive the response. You will need to
+// decode the json response.
+val response = request.send()
+
 ```
 
 #### Other modes

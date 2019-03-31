@@ -23,6 +23,7 @@ class GraphientClient[F[_]](
         effect.pure(
           sttp
             .body(payload)
+            .contentType("application/json")
             .post(endpoint)
         )
     }
