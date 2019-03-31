@@ -5,6 +5,7 @@ import com.softwaremill.sttp._
 import cats.effect.{Fiber, IO}
 import graphient._
 import graphient.Implicits._
+import io.circe.parser.decode
 import io.circe.Encoder
 import io.circe.generic.semiauto._
 import org.scalatest._
@@ -60,13 +61,27 @@ class ClientSpec extends FunSpec with Matchers with BeforeAndAfterAll {
       response.code shouldBe 200
     }
 
-    it("querying through the client for not arguments and scalar output") {
+    it("querying through the client for no arguments and scalar output") {
       val response: Id[Response[String]] =
         client.call(Query(TestSchema.Queries.getLong), Params()).send()
 
       response.code shouldBe 200
       response.body shouldBe 'right
       response.body.right.get shouldBe "{\"data\":{\"getLong\":420}}"
+    }
+
+    it("decoding to GraphqlResponse should work") {
+      case class GetLongResponse(getLong: Long)
+      implicit val getLongDecoder = deriveDecoder[GetLongResponse]
+      val response: Id[Response[String]] =
+        client.call(Query(TestSchema.Queries.getLong), Params()).send()
+
+      response.code shouldBe 200
+
+      val body = response.body.flatMap(decode[GraphqlResponse[GetLongResponse]])
+
+      body shouldBe 'right
+      body.right.get.data.getLong shouldBe 420
     }
 
     it("mutating through the client") {

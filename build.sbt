@@ -43,7 +43,7 @@ lazy val graphient = (project in file("graphient"))
     libraryDependencies ++= cats,
     libraryDependencies ++= sttp,
     libraryDependencies ++= scalaTest.map(_ % Test),
-    libraryDependencies ++= circeOptics.map(_ % Test),
+    libraryDependencies ++= circeTest,
     libraryDependencies ++= http4s.map(_ % Test)
   )
 

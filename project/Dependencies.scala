@@ -12,9 +12,10 @@ object Dependencies {
     "io.circe" %% "circe-core" % circeVersion,
     "io.circe" %% "circe-generic" % circeVersion
   )
-  lazy val circeOptics = Seq(
-    "io.circe" %% "circe-optics" % circeVersion
-  )
+  lazy val circeTest = Seq(
+    "io.circe" %% "circe-optics" % circeVersion,
+    "io.circe" %% "circe-parser" % circeVersion
+  ).map(_ % Test)
 
   lazy val cats = Seq(
     "org.typelevel" %% "cats-core" % "1.5.0",
