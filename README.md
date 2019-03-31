@@ -37,6 +37,8 @@ case class GetLongResponse(getLong: Long)
 implicit val getLongResponseDecoder: Decoder[GetLongResponse] = deriveDecoder[GetLongResponse]
 
 // `responseData` is an Either[List[GraphqlResponseError], GetLongResponse]
+// You can add extra headers by passing in a third argument of type `Request[String, Nothing] => Request[String, Nothing]`
+// the default is `identity`
 val responseData = client.callAndDecode[Params.T, GetLongResponse](Query(TestSchema.Queries.getLong), Params())
 
 ```

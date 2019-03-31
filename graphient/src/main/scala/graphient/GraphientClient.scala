@@ -14,7 +14,7 @@ class GraphientClient[F[_]](
 
   private val queryGenerator = new QueryGenerator(schema)
 
-  def call[P: Encoder](call: GraphqlCall[_, _], variables: P): F[RequestT[Id, String, Nothing]] = {
+  def call[P: Encoder](call: GraphqlCall[_, _], variables: P): F[Request[String, Nothing]] = {
     queryGenerator.generateQuery(call) match {
       case Left(error) => effect.raiseError(error)
       case Right(query) =>
@@ -31,12 +31,13 @@ class GraphientClient[F[_]](
   }
 
   def callAndDecode[P: Encoder, T: Decoder](
-      call:      GraphqlCall[_, _],
-      variables: P
+      call:             GraphqlCall[_, _],
+      variables:        P,
+      transformRequest: Request[String, Nothing] => Request[String, Nothing] = identity
   ): F[Either[List[GraphqlResponseError], T]] = {
     for {
       request <- this.call(call, variables)
-      rawResponse <- request.send()
+      rawResponse <- transformRequest(request).send()
       rawResponseBody     = rawResponse.body.bimap(GraphqlClientError, identity)
       decodedResponseBody = rawResponseBody.flatMap(decode[RawGraphqlResponse[T]])
       response <- decodedResponseBody match {
