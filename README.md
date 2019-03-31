@@ -22,7 +22,7 @@ import graphient.Implicits._
 val client = new GraphientClient(TestSchema.schema, uri"http://yourapi.com/graphql")
 
 // Response is a normal sttp response
-val response = client.call(Query(TestSchema.Queries.getUser), Map[String, Any]("userId" -> 1L))
+val response = client.call(Query(TestSchema.Queries.getUser), Params("userId" -> 1L))
 ```
 
 #### Other modes

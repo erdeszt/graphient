@@ -55,14 +55,14 @@ class ClientSpec extends FunSpec with Matchers with BeforeAndAfterAll {
 
     it("querying through the client") {
       val response: Id[Response[String]] =
-        client.call(Query(TestSchema.Queries.getUser), Map[String, Any]("userId" -> 1L)).send()
+        client.call(Query(TestSchema.Queries.getUser), Params("userId" -> 1L)).send()
 
       response.code shouldBe 200
     }
 
     it("querying through the client for not arguments and scalar output") {
       val response: Id[Response[String]] =
-        client.call(Query(TestSchema.Queries.getLong), Map[String, Any]()).send()
+        client.call(Query(TestSchema.Queries.getLong), Params()).send()
 
       response.code shouldBe 200
       response.body shouldBe 'right
@@ -70,10 +70,10 @@ class ClientSpec extends FunSpec with Matchers with BeforeAndAfterAll {
     }
 
     it("mutating through the client") {
-      val parameters = Map[String, Any](
+      val parameters = Params(
         "name" -> "test user",
         "age"  -> Some(26),
-        "address" -> Map[String, Any](
+        "address" -> Params(
           "zip"    -> 2300,
           "city"   -> "cph",
           "street" -> "etv"
