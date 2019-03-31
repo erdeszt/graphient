@@ -8,9 +8,24 @@
 #### Add the package to your build:
 
 ```scala
-libraryDependencies += "graphient" %% "graphient" % "0.1.8"
+libraryDependencies += "io.github.erdeszt" %% "graphient" % "0.1.8"
 resolvers += Resolver.bintrayRepo("erdeszt", "io.github.erdeszt")
 ```
+
+#### Using the client
+
+```scala
+import graphient._
+import graphient.Implicits._
+// Also import your preferred sttp backend
+
+val client = new GraphientClient(TestSchema.schema, uri"http://yourapi.com/graphql")
+
+// Response is a normal sttp response
+val response = client.call(Query(TestSchema.Queries.getUser), Map[String, Any]("userId" -> 1L))
+```
+
+#### Other modes
 
 ```scala
 import graphient._
