@@ -18,6 +18,8 @@ object Implicits {
         unsafe(Json.fromDouble(double), "double")
       case int: Int =>
         Json.fromInt(int)
+      case bigInt: BigInt =>
+        Json.fromBigInt(bigInt)
       case long: Long =>
         Json.fromLong(long)
       case option: Option[_] =>
