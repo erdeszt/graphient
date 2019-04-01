@@ -8,7 +8,7 @@
 #### Add the package to your build:
 
 ```scala
-libraryDependencies += "io.github.erdeszt" %% "graphient" % "0.1.8"
+libraryDependencies += "io.github.erdeszt" %% "graphient" % "0.1.10"
 resolvers += Resolver.bintrayRepo("erdeszt", "io.github.erdeszt")
 ```
 
