@@ -86,6 +86,8 @@ class QueryGenerator[C, R](schema: Schema[C, R]) extends FieldLookup {
       case obj: ObjectType[_, _] =>
         val fieldAsts = obj.fields.map(generateFieldSelectionAst)
         Vector(fieldAsts: _*)
+      case list: ListType[_] =>
+        generateSelectionAst(list.ofType)
       case opt: OptionType[_] =>
         generateSelectionAst(opt.ofType)
       case _ => throw new Exception("WIP Unsupported output type")

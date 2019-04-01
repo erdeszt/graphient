@@ -109,6 +109,14 @@ object TestSchema {
         resolve   = _ => 420L
       )
 
+    val getListOfString: Field[UserRepo, Unit] =
+      Field(
+        "getListOfString",
+        ListType(StringType),
+        arguments = Nil,
+        resolve   = _ => List("first", "second")
+      )
+
     val getImageId: Field[UserRepo, Unit] =
       Field(
         "getImageId",
@@ -131,6 +139,7 @@ object TestSchema {
         fields[UserRepo, Unit](
           getUser,
           getLong,
+          getListOfString,
           getImageId,
           raiseError
         )
