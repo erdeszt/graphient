@@ -128,6 +128,16 @@ class QueryGeneratorSpec extends FunSpec with Matchers {
         violations shouldBe empty
       }
 
+      it("should support OptionType of objects output type") {
+        val queryAst = queryGenerator.generateQuery(Query(TestSchema.Queries.getOptionOfObject))
+
+        queryAst should be('right)
+
+        val violations = QueryValidator.default.validateQuery(TestSchema.schema, queryAst.right.toOption.get)
+
+        violations shouldBe empty
+      }
+
     }
 
   }

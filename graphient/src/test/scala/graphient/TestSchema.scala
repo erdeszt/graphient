@@ -68,6 +68,14 @@ object TestSchema {
       )
     )
 
+    val OptionOfObjectType = ObjectType(
+      "OptionOfObjects",
+      "Option of object",
+      fields[Unit, Option[Address]](
+        Field("optionalAddress", OptionType(AddressType), resolve = _.value)
+      )
+    )
+
   }
 
   object Arguments {
@@ -149,6 +157,14 @@ object TestSchema {
         resolve   = _ => List(Address(123, "city1", "street 1"), Address(321, "city2", "street 2"))
       )
 
+    val getOptionOfObject: Field[UserRepo, Unit] =
+      Field(
+        "getOptionOfObject",
+        OptionOfObjectType,
+        arguments = Nil,
+        resolve   = _ => Option(Address(123, "city1", "street 1"))
+      )
+
     val schema: ObjectType[UserRepo, Unit] =
       ObjectType(
         "Query",
@@ -158,7 +174,8 @@ object TestSchema {
           getListOfString,
           getImageId,
           raiseError,
-          getListOfObjects
+          getListOfObjects,
+          getOptionOfObject
         )
       )
 
