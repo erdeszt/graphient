@@ -60,6 +60,14 @@ object TestSchema {
       )
     )
 
+    val ListOfObjectsType = ObjectType(
+      "ListOfObjects",
+      "List of objects",
+      fields[Unit, List[Address]](
+        Field("addresses", ListType(AddressType), resolve = _.value)
+      )
+    )
+
   }
 
   object Arguments {
@@ -133,6 +141,14 @@ object TestSchema {
         resolve   = _ => Future.failed(new Exception("OOPS"))
       )
 
+    val getListOfObjects: Field[UserRepo, Unit] =
+      Field(
+        "getListOfObjects",
+        ListOfObjectsType,
+        arguments = Nil,
+        resolve   = _ => List(Address(123, "city1", "street 1"), Address(321, "city2", "street 2"))
+      )
+
     val schema: ObjectType[UserRepo, Unit] =
       ObjectType(
         "Query",
@@ -141,7 +157,8 @@ object TestSchema {
           getLong,
           getListOfString,
           getImageId,
-          raiseError
+          raiseError,
+          getListOfObjects
         )
       )
 

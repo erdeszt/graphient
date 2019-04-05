@@ -71,8 +71,17 @@ class QueryGenerator[C, R](schema: Schema[C, R]) extends FieldLookup {
     }
     def generateFieldSelectionAst(field: Field[_, _]): ast.Selection = {
       field.fieldType match {
-        case _: ScalarType[_] | _: ScalarAlias[_, _] | _: OptionType[_] | _: ListType[_] =>
+        case _: ScalarType[_] | _: ScalarAlias[_, _] | _: OptionType[_] =>
           fieldSelection(field)
+        case _: ListType[_] =>
+          val fields = generateSelectionAst(field.fieldType)
+          ast.Field(
+            alias      = None,
+            name       = field.name,
+            arguments  = Vector(),
+            directives = Vector(),
+            selections = fields
+          )
         case obj: ObjectType[_, _] =>
           fieldSelection(field, obj.fields.map(generateFieldSelectionAst))
         case _ =>
