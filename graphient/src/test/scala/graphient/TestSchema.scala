@@ -1,6 +1,6 @@
 package graphient
 
-import sangria.macros.derive.deriveInputObjectType
+import sangria.macros.derive.{deriveEnumType, deriveInputObjectType, deriveObjectType}
 import sangria.marshalling._
 import sangria.schema._
 
@@ -12,12 +12,22 @@ object TestSchema {
 
     case class ImageId(value: Long)
 
+    object Gender extends Enumeration {
+      type Gender = Value
+      val MALE, FEMALE, NEUTRAL = Value
+    }
+
     case class User(
         id:      Long,
         name:    String,
         age:     Int,
         hobbies: List[String],
         address: Address
+    )
+
+    case class GenderedUser(
+        id:     Long,
+        gender: Gender.Value
     )
 
     case class Address(
@@ -59,6 +69,10 @@ object TestSchema {
         Field("address", AddressType, resolve          = _.value.address)
       )
     )
+
+    implicit val GenderType = deriveEnumType[Gender.Value]()
+
+    val GenderedUserType = deriveObjectType[Unit, GenderedUser]()
 
     val ListOfObjectsType = ObjectType(
       "ListOfObjects",
@@ -117,6 +131,14 @@ object TestSchema {
         resolve   = request => request.ctx.getUser(request.args.arg(UserIdArg))
       )
 
+    val getGenderedUser: Field[UserRepo, Unit] =
+      Field(
+        "getGenderedUser",
+        OptionType(GenderedUserType),
+        arguments = UserIdArg :: Nil,
+        resolve   = request => GenderedUser(request.arg(UserIdArg), Gender.MALE)
+      )
+
     val getLong: Field[UserRepo, Unit] =
       Field(
         "getLong",
@@ -173,6 +195,7 @@ object TestSchema {
           getLong,
           getListOfString,
           getImageId,
+          getGenderedUser,
           raiseError,
           getListOfObjects,
           getOptionOfObject

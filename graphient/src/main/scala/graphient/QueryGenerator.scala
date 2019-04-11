@@ -91,6 +91,14 @@ class QueryGenerator[C, R](schema: Schema[C, R]) extends FieldLookup {
             directives = Vector(),
             selections = fields
           )
+        case _: EnumType[_] =>
+          ast.Field(
+            alias      = None,
+            name       = field.name,
+            arguments  = Vector(),
+            directives = Vector(),
+            selections = Vector()
+          )
         case obj: ObjectType[_, _] =>
           fieldSelection(field, obj.fields.map(generateFieldSelectionAst))
         case _ =>
