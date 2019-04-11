@@ -26,8 +26,9 @@ object TestSchema {
     )
 
     case class EnumedUser(
-        id:        Long,
-        enumField: EnumExample.Value
+        id:            Long,
+        enumField:     EnumExample.Value,
+        enumListField: List[EnumExample.Value]
     )
 
     case class Address(
@@ -136,7 +137,8 @@ object TestSchema {
         "getEnumedUser",
         OptionType(EnumedUserType),
         arguments = UserIdArg :: Nil,
-        resolve   = request => EnumedUser(request.arg(UserIdArg), EnumExample.ENEX_1)
+        resolve = request =>
+          EnumedUser(request.arg(UserIdArg), EnumExample.ENEX_1, List(EnumExample.ENEX_1, EnumExample.ENEX_2))
       )
 
     val getLong: Field[UserRepo, Unit] =
