@@ -102,12 +102,12 @@ class QueryGenerator[C, R](schema: Schema[C, R]) extends FieldLookup {
         case obj: ObjectType[_, _] =>
           fieldSelection(field, obj.fields.map(generateFieldSelectionAst))
         case _ =>
-          throw new Exception("WIP Unsupported field type")
+          throw new Exception(s"WIP Unsupported field type - ${field.name}")
       }
     }
 
     outputType match {
-      case _: ScalarType[_] | _: ScalarAlias[_, _] =>
+      case _: ScalarType[_] | _: ScalarAlias[_, _] | _: EnumType[_] =>
         Vector()
       case obj: ObjectType[_, _] =>
         val fieldAsts = obj.fields.map(generateFieldSelectionAst)
@@ -116,7 +116,7 @@ class QueryGenerator[C, R](schema: Schema[C, R]) extends FieldLookup {
         generateSelectionAst(list.ofType)
       case opt: OptionType[_] =>
         generateSelectionAst(opt.ofType)
-      case _ => throw new Exception("WIP Unsupported output type")
+      case _ => throw new Exception(s"WIP Unsupported output type ${outputType.namedType.name}")
     }
   }
 
