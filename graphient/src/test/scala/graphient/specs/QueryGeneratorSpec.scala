@@ -3,6 +3,7 @@ package graphient.specs
 import graphient._
 import graphient.TestSchema.Domain._
 import org.scalatest._
+import sangria.renderer.QueryRenderer
 import sangria.validation.QueryValidator
 
 class QueryGeneratorSpec extends FunSpec with Matchers {
@@ -130,6 +131,16 @@ class QueryGeneratorSpec extends FunSpec with Matchers {
 
       it("should support OptionType of objects output type") {
         val queryAst = queryGenerator.generateQuery(Query(TestSchema.Queries.getOptionOfObject))
+
+        queryAst should be('right)
+
+        val violations = QueryValidator.default.validateQuery(TestSchema.schema, queryAst.right.toOption.get)
+
+        violations shouldBe empty
+      }
+
+      it("should support enum output type") {
+        val queryAst = queryGenerator.generateQuery(Query(TestSchema.Queries.getGenderedUser))
 
         queryAst should be('right)
 
