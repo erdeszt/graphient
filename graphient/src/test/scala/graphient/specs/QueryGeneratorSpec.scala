@@ -140,7 +140,7 @@ class QueryGeneratorSpec extends FunSpec with Matchers {
       }
 
       it("should support enum output type") {
-        val queryAst = queryGenerator.generateQuery(Query(TestSchema.Queries.getGenderedUser))
+        val queryAst = queryGenerator.generateQuery(Query(TestSchema.Queries.getEnumedUser))
 
         queryAst should be('right)
 

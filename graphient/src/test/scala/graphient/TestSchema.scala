@@ -12,9 +12,9 @@ object TestSchema {
 
     case class ImageId(value: Long)
 
-    object Gender extends Enumeration {
-      type Gender = Value
-      val MALE, FEMALE, NEUTRAL = Value
+    object EnumExample extends Enumeration {
+      type EnumExample = Value
+      val ENEX_1, ENEX_2 = Value
     }
 
     case class User(
@@ -25,9 +25,9 @@ object TestSchema {
         address: Address
     )
 
-    case class GenderedUser(
-        id:     Long,
-        gender: Gender.Value
+    case class EnumedUser(
+        id:        Long,
+        enumField: EnumExample.Value
     )
 
     case class Address(
@@ -70,9 +70,9 @@ object TestSchema {
       )
     )
 
-    implicit val GenderType = deriveEnumType[Gender.Value]()
+    implicit val EnumExampleType = deriveEnumType[EnumExample.Value]()
 
-    val GenderedUserType = deriveObjectType[Unit, GenderedUser]()
+    val EnumedUserType = deriveObjectType[Unit, EnumedUser]()
 
     val ListOfObjectsType = ObjectType(
       "ListOfObjects",
@@ -131,12 +131,12 @@ object TestSchema {
         resolve   = request => request.ctx.getUser(request.args.arg(UserIdArg))
       )
 
-    val getGenderedUser: Field[UserRepo, Unit] =
+    val getEnumedUser: Field[UserRepo, Unit] =
       Field(
-        "getGenderedUser",
-        OptionType(GenderedUserType),
+        "getEnumedUser",
+        OptionType(EnumedUserType),
         arguments = UserIdArg :: Nil,
-        resolve   = request => GenderedUser(request.arg(UserIdArg), Gender.MALE)
+        resolve   = request => EnumedUser(request.arg(UserIdArg), EnumExample.ENEX_1)
       )
 
     val getLong: Field[UserRepo, Unit] =
@@ -195,7 +195,7 @@ object TestSchema {
           getLong,
           getListOfString,
           getImageId,
-          getGenderedUser,
+          getEnumedUser,
           raiseError,
           getListOfObjects,
           getOptionOfObject
