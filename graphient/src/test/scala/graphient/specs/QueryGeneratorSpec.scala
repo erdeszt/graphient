@@ -3,7 +3,6 @@ package graphient.specs
 import graphient._
 import graphient.TestSchema.Domain._
 import org.scalatest._
-import sangria.renderer.QueryRenderer
 import sangria.validation.QueryValidator
 
 class QueryGeneratorSpec extends FunSpec with Matchers {

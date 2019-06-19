@@ -1,5 +1,6 @@
 package graphient
 
+import cats.effect.Sync
 import cats.implicits._
 import io.circe.parser.decode
 import com.softwaremill.sttp._
@@ -10,7 +11,7 @@ import sangria.schema.Schema
 class GraphientClient[F[_]](
     schema:         Schema[_, _],
     endpoint:       Uri
-)(implicit backend: SttpBackend[F, _], effect: cats.MonadError[F, Throwable]) {
+)(implicit backend: SttpBackend[F, _], effect: Sync[F]) {
 
   private val queryGenerator = new QueryGenerator(schema)
 
@@ -21,7 +22,7 @@ class GraphientClient[F[_]](
         val renderedQuery = QueryRenderer.render(query)
         val payload       = GraphqlRequest(renderedQuery, variables)
 
-        effect.pure(
+        effect.delay(
           sttp
             .body(payload)
             .contentType("application/json")
@@ -41,11 +42,12 @@ class GraphientClient[F[_]](
       rawResponseBody     = rawResponse.body.bimap(GraphqlClientError, identity)
       decodedResponseBody = rawResponseBody.flatMap(decode[RawGraphqlResponse[T]])
       response <- decodedResponseBody match {
-        case Left(error) => effect.raiseError(error)
+        case Left(error) => effect.raiseError[Either[List[GraphqlResponseError], T]](error)
         case Right(response) =>
           (response.errors, response.data) match {
             case (None, None) =>
-              effect.raiseError(GraphqlClientError("Inconsistent response (no data, no errors)"))
+              effect.raiseError[Either[List[GraphqlResponseError], T]](
+                GraphqlClientError("Inconsistent response (no data, no errors)"))
             case (Some(errors), _)  => effect.pure(Left(errors))
             case (None, Some(data)) => effect.pure(Right(data))
           }
