@@ -31,6 +31,12 @@ object TestSchema {
         enumListField: List[EnumExample.Value]
     )
 
+    sealed trait UnionType
+    case class Robot(id: Long, name: String) extends UnionType
+    case class Human(gender: String) extends UnionType
+
+    case class Worker(workerType: UnionType)
+
     case class Address(
         zip:    Int,
         city:   String,
@@ -74,6 +80,21 @@ object TestSchema {
     implicit val EnumExampleType = deriveEnumType[EnumExample.Value]()
 
     val EnumedUserType = deriveObjectType[Unit, EnumedUser]()
+    val RobotType = deriveObjectType[Unit, Robot]()
+    val HumanType = deriveObjectType[Unit, Human]()
+    val UnionUserType = UnionType(
+      "UserType",
+      None,
+      List(RobotType, HumanType)
+    )
+
+    val WorkerType = ObjectType(
+      "Worker",
+      "Worker desc...",
+      fields[Unit, Worker](
+        Field("workerType", UnionUserType, resolve = _.value.workerType)
+      )
+    )
 
     val ListOfObjectsType = ObjectType(
       "ListOfObjects",
@@ -141,6 +162,23 @@ object TestSchema {
           EnumedUser(request.arg(UserIdArg), EnumExample.ENEX_1, List(EnumExample.ENEX_1, EnumExample.ENEX_2))
       )
 
+    val getUnionUser1: Field[UserRepo, Unit] =
+      Field(
+        "getUnionUser1",
+        OptionType(UnionUserType),
+        arguments = UserIdArg :: Nil,
+        resolve = request =>
+          Robot(request.arg(UserIdArg), "Tester")
+      )
+
+    val getFieldUnionUser: Field[UserRepo, Unit] =
+      Field(
+        "getFieldUnionUser",
+        WorkerType,
+        arguments = UserIdArg :: Nil,
+        resolve = _ => Worker(Robot(10, "roboter"))
+      )
+
     val getLong: Field[UserRepo, Unit] =
       Field(
         "getLong",
@@ -198,6 +236,8 @@ object TestSchema {
           getListOfString,
           getImageId,
           getEnumedUser,
+          getUnionUser1,
+          getFieldUnionUser,
           raiseError,
           getListOfObjects,
           getOptionOfObject
