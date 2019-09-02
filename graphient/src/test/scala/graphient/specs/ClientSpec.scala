@@ -1,7 +1,8 @@
 package graphient.specs
 
-import cats.effect.{ExitCase, Fiber, IO, Sync}
+import cats.effect.{Fiber, IO}
 import com.softwaremill.sttp._
+import com.softwaremill.sttp.asynchttpclient.cats.AsyncHttpClientCatsBackend
 import graphient._
 import graphient.Implicits._
 import io.circe.Encoder
@@ -21,7 +22,7 @@ class ClientSpec extends FunSpec with Matchers with BeforeAndAfterAll {
 
   implicit val contextShift = IO.contextShift(global)
   implicit val timer        = IO.timer(global)
-  implicit val backend      = HttpURLConnectionBackend()
+  implicit val backend      = AsyncHttpClientCatsBackend[IO]()
 
   var serverThread = None: Option[Fiber[IO, Unit]]
 
@@ -38,7 +39,7 @@ class ClientSpec extends FunSpec with Matchers with BeforeAndAfterAll {
   }
 
   private def isServerUp(): Boolean = {
-    Try(sttp.get(uri"http://localhost:8080/status").send().code == 200).getOrElse(false)
+    Try(sttp.get(uri"http://localhost:8080/status").send().unsafeRunSync().code == 200).getOrElse(false)
   }
 
   describe("Client - server integration suite") {
@@ -51,44 +52,18 @@ class ClientSpec extends FunSpec with Matchers with BeforeAndAfterAll {
 
     implicit val getLongDecoder = deriveDecoder[GetLongResponse]
 
-    implicit val idSync = new Sync[Id] {
-      def raiseError[A](e:           Throwable): Id[A] = throw e
-      def handleErrorWith[A](fa:     Id[A])(f: Throwable => Id[A]): Id[A] = Try(fa).recover { case error => f(error) }.get
-      def pure[A](x:                 A): Id[A] = x
-      def flatMap[A, B](fa:          Id[A])(f: A => Id[B]): Id[B] = f(fa)
-      def suspend[A](thunk:          => Id[A]): Id[A] = thunk
-      def bracketCase[A, B](acquire: Id[A])(use: A => Id[B])(release: (A, ExitCase[Throwable]) => Id[Unit]): Id[B] = {
-        val resource = acquire
-        try {
-          val result = use(resource)
-          release(resource, ExitCase.Completed)
-          result
-        } catch {
-          case e: Throwable =>
-            release(resource, ExitCase.Error(e))
-            throw e
-        }
-      }
-      def tailRecM[A, B](a: A)(f: A => Id[Either[A, B]]): Id[B] = {
-        f(a) match {
-          case Left(moreA) => tailRecM[A, B](moreA)(f)
-          case Right(b)    => b
-        }
-      }
-    }
-
-    val client = new GraphientClient(TestSchema.schema, uri"http://localhost:8080/graphql")
+    val client = new GraphientClient[IO](TestSchema.schema, uri"http://localhost:8080/graphql")
 
     it("querying through the client") {
-      val response: Id[Response[String]] =
-        client.call(Query(TestSchema.Queries.getUser), Params("userId" -> 1L)).send()
+      val response: Response[String] =
+        client.call(Query(TestSchema.Queries.getUser), Params("userId" -> 1L)).flatMap(_.send()).unsafeRunSync()
 
       response.code shouldBe 200
     }
 
     it("querying through the client for no arguments and scalar output") {
-      val response: Id[Response[String]] =
-        client.call(Query(TestSchema.Queries.getLong), Params()).send()
+      val response: Response[String] =
+        client.call(Query(TestSchema.Queries.getLong), Params()).flatMap(_.send()).unsafeRunSync()
 
       response.code shouldBe 200
       response.body shouldBe 'right
@@ -96,14 +71,16 @@ class ClientSpec extends FunSpec with Matchers with BeforeAndAfterAll {
     }
 
     it("decoding to response") {
-      val response = client.callAndDecode[Params.T, GetLongResponse](Query(TestSchema.Queries.getLong), Params())
+      val response =
+        client.callAndDecode[Params.T, GetLongResponse](Query(TestSchema.Queries.getLong), Params()).unsafeRunSync()
 
       response shouldBe 'right
       response.right.get.getLong shouldBe 420
     }
 
     it("decoding error response") {
-      val response = client.callAndDecode[Params.T, GetLongResponse](Query(TestSchema.Queries.raiseError), Params())
+      val response =
+        client.callAndDecode[Params.T, GetLongResponse](Query(TestSchema.Queries.raiseError), Params()).unsafeRunSync()
 
       response shouldBe 'left
 
@@ -131,7 +108,9 @@ class ClientSpec extends FunSpec with Matchers with BeforeAndAfterAll {
         "hobbies" -> List("coding", "debugging")
       )
       val response =
-        client.callAndDecode[Params.T, EmptyResponse](Mutation(TestSchema.Mutations.createUser), parameters)
+        client
+          .callAndDecode[Params.T, EmptyResponse](Mutation(TestSchema.Mutations.createUser), parameters)
+          .unsafeRunSync()
 
       response shouldBe 'right
     }
