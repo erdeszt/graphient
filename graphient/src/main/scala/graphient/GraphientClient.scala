@@ -48,8 +48,8 @@ class GraphientClient[F[_]](
             case (None, None) =>
               effect.raiseError[Either[List[GraphqlResponseError], T]](
                 GraphqlClientError("Inconsistent response (no data, no errors)"))
-            case (Some(errors), _)  => effect.pure(Left(errors))
-            case (None, Some(data)) => effect.pure(Right(data))
+            case (Some(errors), _)  => effect.pure(Left(errors): Either[List[GraphqlResponseError], T])
+            case (None, Some(data)) => effect.pure(Right(data):  Either[List[GraphqlResponseError], T])
           }
       }
     } yield response
