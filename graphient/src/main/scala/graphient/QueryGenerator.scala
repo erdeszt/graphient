@@ -1,6 +1,7 @@
 package graphient
 
 import sangria.ast
+import sangria.ast.NamedType
 import sangria.schema._
 
 class QueryGenerator[C, R](schema: Schema[C, R]) extends FieldLookup {
@@ -60,6 +61,12 @@ class QueryGenerator[C, R](schema: Schema[C, R]) extends FieldLookup {
   }
 
   private def generateSelectionAst[T](outputType: OutputType[T]): Vector[ast.Selection] = {
+    def inlineFragment(objectType: ObjectType[_, _]): ast.Selection =
+      ast.InlineFragment(
+        typeCondition = Some(NamedType(name = objectType.name)),
+        directives = Vector(),
+        selections = objectType.fields.map(generateFieldSelectionAst)
+      )
     def fieldSelection(field: Field[_, _], selections: Vector[ast.Selection] = Vector.empty): ast.Selection = {
       ast.Field(
         alias      = None,
@@ -101,6 +108,14 @@ class QueryGenerator[C, R](schema: Schema[C, R]) extends FieldLookup {
           )
         case obj: ObjectType[_, _] =>
           fieldSelection(field, obj.fields.map(generateFieldSelectionAst))
+        case union: UnionType[_] =>
+          ast.Field(
+            alias = None,
+            name = field.name,
+            arguments = Vector(),
+            directives = Vector(),
+            selections = Vector(union.types.map(inlineFragment): _*)
+          )
         case _ =>
           throw new Exception(s"WIP Unsupported field type - ${field.name}")
       }
@@ -116,6 +131,8 @@ class QueryGenerator[C, R](schema: Schema[C, R]) extends FieldLookup {
         generateSelectionAst(list.ofType)
       case opt: OptionType[_] =>
         generateSelectionAst(opt.ofType)
+      case union: UnionType[_] =>
+        Vector(union.types.map(inlineFragment): _*)
       case _ => throw new Exception(s"WIP Unsupported output type ${outputType.namedType.name}")
     }
   }
