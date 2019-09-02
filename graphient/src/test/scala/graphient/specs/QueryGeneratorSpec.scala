@@ -60,6 +60,16 @@ class QueryGeneratorSpec extends FunSpec with Matchers {
         violations shouldBe empty
       }
 
+      it("should generate a valid query for field union types") {
+        val queryAst = queryGenerator.generateQuery(Query(TestSchema.Queries.getFieldUnionUser))
+
+        queryAst should be('right)
+
+        val violations = QueryValidator.default.validateQuery(TestSchema.schema, queryAst.right.toOption.get)
+
+        violations shouldBe empty
+      }
+
       it("should generate a valid query ast for mutations") {
         val queryAst = queryGenerator.generateQuery(Mutation(TestSchema.Mutations.createUser))
 
@@ -140,6 +150,16 @@ class QueryGeneratorSpec extends FunSpec with Matchers {
 
       it("should support enum output type") {
         val queryAst = queryGenerator.generateQuery(Query(TestSchema.Queries.getEnumedUser))
+
+        queryAst should be('right)
+
+        val violations = QueryValidator.default.validateQuery(TestSchema.schema, queryAst.right.toOption.get)
+
+        violations shouldBe empty
+      }
+
+      it("should support union output type") {
+        val queryAst = queryGenerator.generateQuery(Query(TestSchema.Queries.getUnionUser1))
 
         queryAst should be('right)
 
