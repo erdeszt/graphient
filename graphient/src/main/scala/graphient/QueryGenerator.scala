@@ -64,8 +64,8 @@ class QueryGenerator[C, R](schema: Schema[C, R]) extends FieldLookup {
     def inlineFragment(objectType: ObjectType[_, _]): ast.Selection =
       ast.InlineFragment(
         typeCondition = Some(NamedType(name = objectType.name)),
-        directives = Vector(),
-        selections = objectType.fields.map(generateFieldSelectionAst)
+        directives    = Vector(),
+        selections    = objectType.fields.map(generateFieldSelectionAst)
       )
     def fieldSelection(field: Field[_, _], selections: Vector[ast.Selection] = Vector.empty): ast.Selection = {
       ast.Field(
@@ -110,9 +110,9 @@ class QueryGenerator[C, R](schema: Schema[C, R]) extends FieldLookup {
           fieldSelection(field, obj.fields.map(generateFieldSelectionAst))
         case union: UnionType[_] =>
           ast.Field(
-            alias = None,
-            name = field.name,
-            arguments = Vector(),
+            alias      = None,
+            name       = field.name,
+            arguments  = Vector(),
             directives = Vector(),
             selections = Vector(union.types.map(inlineFragment): _*)
           )
