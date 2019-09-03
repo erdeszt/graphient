@@ -61,6 +61,14 @@ class QueryGenerator[C, R](schema: Schema[C, R]) extends FieldLookup {
   }
 
   private def generateSelectionAst[T](outputType: OutputType[T]): Vector[ast.Selection] = {
+    def unionFields(unionType: UnionType[_]): List[ast.Selection] =
+      ast.Field(
+        alias      = None,
+        name       = "__typename",
+        arguments  = Vector(),
+        directives = Vector(),
+        selections = Vector()
+      ) :: unionType.types.map(inlineFragment)
     def inlineFragment(objectType: ObjectType[_, _]): ast.Selection =
       ast.InlineFragment(
         typeCondition = Some(NamedType(name = objectType.name)),
@@ -114,7 +122,7 @@ class QueryGenerator[C, R](schema: Schema[C, R]) extends FieldLookup {
             name       = field.name,
             arguments  = Vector(),
             directives = Vector(),
-            selections = Vector(union.types.map(inlineFragment): _*)
+            selections = Vector(unionFields(union): _*)
           )
         case _ =>
           throw new Exception(s"WIP Unsupported field type - ${field.name}")
@@ -132,7 +140,7 @@ class QueryGenerator[C, R](schema: Schema[C, R]) extends FieldLookup {
       case opt: OptionType[_] =>
         generateSelectionAst(opt.ofType)
       case union: UnionType[_] =>
-        Vector(union.types.map(inlineFragment): _*)
+        Vector(unionFields(union): _*)
       case _ => throw new Exception(s"WIP Unsupported output type ${outputType.namedType.name}")
     }
   }
