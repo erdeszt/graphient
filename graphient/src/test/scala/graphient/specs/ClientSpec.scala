@@ -55,15 +55,27 @@ class ClientSpec extends FunSpec with Matchers with BeforeAndAfterAll {
     val client = new GraphientClient[IO](TestSchema.schema, uri"http://localhost:8080/graphql")
 
     it("querying through the client") {
-      val response: Response[String] =
-        client.request(Query(TestSchema.Queries.getUser), Params("userId" -> 1L)).flatMap(_.send()).unsafeRunSync()
+      val expectedToken = "Bearer token"
+      val request: IO[Request[String, Nothing]] = client
+        .request(Query(TestSchema.Queries.getUser), Params("userId" -> 1L), Map("Authorization" -> expectedToken))
+
+      request.unsafeRunSync().headers.exists { case (k, v) => k.equals("Authorization") && v.equals(expectedToken) } shouldBe true
+
+      val response: Response[String] = request
+        .flatMap(_.send())
+        .unsafeRunSync()
 
       response.code shouldBe 200
     }
 
-    it("querying through the client for no arguments and scalar output") {
-      val response: Response[String] =
-        client.request(Query(TestSchema.Queries.getLong), Params()).flatMap(_.send()).unsafeRunSync()
+    it("querying through the client for no arguments, no headers and scalar output") {
+      val request = client.request(Query(TestSchema.Queries.getLong), Params(), Map.empty)
+
+      request.unsafeRunSync().headers.forall {
+        case (k, _) => Set("Accept-Encoding", "Content-Type").contains(k)
+      } shouldBe true
+
+      val response: Response[String] = request.flatMap(_.send()).unsafeRunSync()
 
       response.code shouldBe 200
       response.body shouldBe 'right
