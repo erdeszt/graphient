@@ -101,8 +101,6 @@ class ClientSpec extends FunSpec with Matchers with BeforeAndAfterAll {
       val error = response.left.get
 
       error.asInstanceOf[GraphqlResponseError].message shouldBe "Internal server error"
-
-      println("YO")
     }
 
     // TODO: Check for errors
