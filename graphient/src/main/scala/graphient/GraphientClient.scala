@@ -15,9 +15,11 @@ class GraphientClient[F[_]](
 
   private val queryGenerator = new QueryGenerator(schema)
 
-  def request[P: Encoder](call: GraphqlCall[_, _],
-                          variables: P,
-                          headers:   Map[String, String]): F[Request[String, Nothing]] = {
+  def request[P: Encoder](
+      call:      GraphqlCall[_, _],
+      variables: P,
+      headers:   Map[String, String]
+  ): F[Request[String, Nothing]] = {
     queryGenerator.generateQuery(call) match {
       case Left(error) => effect.raiseError(error)
       case Right(query) =>
