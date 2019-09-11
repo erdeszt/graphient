@@ -37,10 +37,11 @@ class GraphientClient[F[_]](
   def requestAndDecode[P: Encoder, T: Decoder](
       call:             GraphqlCall[_, _],
       variables:        P,
+      headers:          Map[String, String],
       transformRequest: Request[String, Nothing] => Request[String, Nothing] = identity
   ): F[Either[List[GraphqlResponseError], T]] = {
     for {
-      request <- this.request(call, variables, Map.empty)
+      request <- this.request(call, variables, headers)
       rawResponse <- transformRequest(request).send()
       rawResponseBody     = rawResponse.body.bimap(GraphqlClientError, identity)
       decodedResponseBody = rawResponseBody.flatMap(decode[RawGraphqlResponse[T]])
