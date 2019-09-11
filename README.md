@@ -17,17 +17,18 @@ resolvers += Resolver.bintrayRepo("erdeszt", "io.github.erdeszt")
 ```scala
 import graphient._
 import graphient.Implicits._
-// Also import your preferred sttp backend
+
+// IMPORTANT: You also need to import your preferred sttp backend
 
 // For the definition of the TestSchema check: graphient/src/test/scala/graphient/TestSchema.scala
 val client = new GraphientClient(TestSchema.schema, uri"http://yourapi.com/graphql")
 
 // Using the raw sttp api:
 // `request` is a normal sttp request with the body set to the generated graphql query
-// and content type set to application/json. You can add authorization or other
-// headers before sending the request or as part of the request
+// and content type set to application/json. You can add headers directly here or
+// after the request is generated.
 // You can also use any type that is circe encodable as the parameters
-val request = client.request(Query(TestSchema.Queries.getUser), Params("userId" -> 1L), Map("Authorization" -> "Bearer token"))
+val request = client.createRequest(Query(TestSchema.Queries.getUser), Params("userId" -> 1L), Map("Authorization" -> "Bearer token"))
 
 // When you are ready, send the request to receive the response. You will need to
 // decode the json response.
@@ -37,10 +38,11 @@ val response = request.send()
 case class GetLongResponse(getLong: Long)
 implicit val getLongResponseDecoder: Decoder[GetLongResponse] = deriveDecoder[GetLongResponse]
 
-// `responseData` is an Either[List[GraphqlResponseError], GetLongResponse]
-// You can add extra headers by passing in a third argument of type `Request[String, Nothing] => Request[String, Nothing]`
+// `responseData` is an F[GetLongResponse] where F is your effect type(has to support cats-effect `Sync`).
+// You can add extra headers or other information by passing in a third argument of type `Request[String, Nothing] => Request[String, Nothing]`
 // the default is `identity`
-val responseData = client.requestAndDecode[Params.T, GetLongResponse](Query(TestSchema.Queries.getLong), Params())
+// The imported sttp backend has to use the same F effect
+val responseData = client.call[F, Params.T, GetLongResponse](Query(TestSchema.Queries.getLong), Params())
 
 ```
 

@@ -52,28 +52,27 @@ class ClientSpec extends FunSpec with Matchers with BeforeAndAfterAll {
 
     implicit val getLongDecoder = deriveDecoder[GetLongResponse]
 
-    val client = new GraphientClient[IO](TestSchema.schema, uri"http://localhost:8080/graphql")
+    val client = new GraphientClient(TestSchema.schema, uri"http://localhost:8080/graphql")
 
     it("querying through the client") {
       val expectedToken = "Bearer token"
-      val request: IO[Request[String, Nothing]] = client
-        .request(Query(TestSchema.Queries.getUser), Params("userId" -> 1L), Map("Authorization" -> expectedToken))
+      val request: Either[GraphqlCallError, Request[String, Nothing]] = client
+        .createRequest(Query(TestSchema.Queries.getUser), Params("userId" -> 1L), Map("Authorization" -> expectedToken))
 
-      request.unsafeRunSync().headers.exists { case (k, v) => k.equals("Authorization") && v.equals(expectedToken) } shouldBe true
+      request.isRight shouldBe true
+      request.right.get.headers.exists { case (k, v) => k.equals("Authorization") && v.equals(expectedToken) } shouldBe true
 
-      val response: Response[String] = request
-        .flatMap(_.send())
-        .unsafeRunSync()
+      val response: IO[Response[String]] = request.right.get.send()
 
-      response.code shouldBe 200
+      response.unsafeRunSync().code shouldBe 200
     }
 
     it("querying through the client for no arguments, no headers and scalar output") {
-      val request = client.request(Query(TestSchema.Queries.getLong), Params(), Map.empty)
+      val request = client.createRequest(Query(TestSchema.Queries.getLong), Params())
 
-      request.unsafeRunSync().headers.map(_._1).toSet shouldBe Set("Accept-Encoding", "Content-Type")
+      request.right.get.headers.map(_._1).toSet shouldBe Set("Accept-Encoding", "Content-Type")
 
-      val response: Response[String] = request.flatMap(_.send()).unsafeRunSync()
+      val response: Response[String] = request.right.get.send().unsafeRunSync()
 
       response.code shouldBe 200
       response.body shouldBe 'right
@@ -83,30 +82,27 @@ class ClientSpec extends FunSpec with Matchers with BeforeAndAfterAll {
     it("decoding to response") {
       val response =
         client
-          .requestAndDecode[Params.T, GetLongResponse](Query(TestSchema.Queries.getLong), Params())
+          .call[IO, Params.T, GetLongResponse](Query(TestSchema.Queries.getLong), Params())
           .unsafeRunSync()
 
-      response shouldBe 'right
-      response.right.get.getLong shouldBe 420
+      response.getLong shouldBe 420
     }
 
     it("decoding error response") {
       val response =
         client
-          .requestAndDecode[Params.T, GetLongResponse](Query(TestSchema.Queries.raiseError), Params())
+          .call[IO, Params.T, GetLongResponse](Query(TestSchema.Queries.raiseError), Params())
+          .map(Right(_): Either[Throwable, GetLongResponse])
+          .handleErrorWith(error => IO.pure(Left(error)))
           .unsafeRunSync()
 
       response shouldBe 'left
 
-      val errors = response.left.get
+      val error = response.left.get
 
-      errors should have length 1
+      error.asInstanceOf[GraphqlResponseError].message shouldBe "Internal server error"
 
-      val onlyError = errors.head
-
-      onlyError.message shouldBe "Internal server error"
-
-      response.left.get.head.path should contain theSameElementsInOrderAs List("raiseError")
+      println("YO")
     }
 
     // TODO: Check for errors
@@ -123,10 +119,10 @@ class ClientSpec extends FunSpec with Matchers with BeforeAndAfterAll {
       )
       val response =
         client
-          .requestAndDecode[Params.T, EmptyResponse](Mutation(TestSchema.Mutations.createUser), parameters)
+          .call[IO, Params.T, EmptyResponse](Mutation(TestSchema.Mutations.createUser), parameters)
           .unsafeRunSync()
 
-      response shouldBe 'right
+      response shouldBe EmptyResponse()
     }
 
   }
