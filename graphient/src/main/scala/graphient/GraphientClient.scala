@@ -18,7 +18,7 @@ class GraphientClient[F[_]](
   def request[P: Encoder](
       call:      GraphqlCall[_, _],
       variables: P,
-      headers:   Map[String, String]
+      headers:   Map[String, String] = Map.empty
   ): F[Request[String, Nothing]] = {
     queryGenerator.generateQuery(call) match {
       case Left(error) => effect.raiseError(error)
@@ -39,7 +39,7 @@ class GraphientClient[F[_]](
   def requestAndDecode[P: Encoder, T: Decoder](
       call:             GraphqlCall[_, _],
       variables:        P,
-      headers:          Map[String, String],
+      headers:          Map[String, String] = Map.empty,
       transformRequest: Request[String, Nothing] => Request[String, Nothing] = identity
   ): F[Either[List[GraphqlResponseError], T]] = {
     for {
