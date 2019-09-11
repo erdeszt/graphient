@@ -84,7 +84,7 @@ class ClientSpec extends FunSpec with Matchers with BeforeAndAfterAll {
 
     it("decoding to response") {
       val response =
-        client.callAndDecode[Params.T, GetLongResponse](Query(TestSchema.Queries.getLong), Params()).unsafeRunSync()
+        client.requestAndDecode[Params.T, GetLongResponse](Query(TestSchema.Queries.getLong), Params()).unsafeRunSync()
 
       response shouldBe 'right
       response.right.get.getLong shouldBe 420
@@ -92,7 +92,9 @@ class ClientSpec extends FunSpec with Matchers with BeforeAndAfterAll {
 
     it("decoding error response") {
       val response =
-        client.callAndDecode[Params.T, GetLongResponse](Query(TestSchema.Queries.raiseError), Params()).unsafeRunSync()
+        client
+          .requestAndDecode[Params.T, GetLongResponse](Query(TestSchema.Queries.raiseError), Params())
+          .unsafeRunSync()
 
       response shouldBe 'left
 
@@ -121,7 +123,7 @@ class ClientSpec extends FunSpec with Matchers with BeforeAndAfterAll {
       )
       val response =
         client
-          .callAndDecode[Params.T, EmptyResponse](Mutation(TestSchema.Mutations.createUser), parameters)
+          .requestAndDecode[Params.T, EmptyResponse](Mutation(TestSchema.Mutations.createUser), parameters)
           .unsafeRunSync()
 
       response shouldBe 'right

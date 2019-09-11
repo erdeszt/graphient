@@ -34,7 +34,7 @@ class GraphientClient[F[_]](
     }
   }
 
-  def callAndDecode[P: Encoder, T: Decoder](
+  def requestAndDecode[P: Encoder, T: Decoder](
       call:             GraphqlCall[_, _],
       variables:        P,
       transformRequest: Request[String, Nothing] => Request[String, Nothing] = identity
