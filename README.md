@@ -25,9 +25,9 @@ val client = new GraphientClient(TestSchema.schema, uri"http://yourapi.com/graph
 // Using the raw sttp api:
 // `request` is a normal sttp request with the body set to the generated graphql query
 // and content type set to application/json. You can add authorization or other
-// headers before sending the request
+// headers before sending the request or as part of the request
 // You can also use any type that is circe encodable as the parameters
-val request = client.call(Query(TestSchema.Queries.getUser), Params("userId" -> 1L))
+val request = client.request(Query(TestSchema.Queries.getUser), Params("userId" -> 1L), Map("Authorization" -> "Bearer token"))
 
 // When you are ready, send the request to receive the response. You will need to
 // decode the json response.
@@ -40,7 +40,7 @@ implicit val getLongResponseDecoder: Decoder[GetLongResponse] = deriveDecoder[Ge
 // `responseData` is an Either[List[GraphqlResponseError], GetLongResponse]
 // You can add extra headers by passing in a third argument of type `Request[String, Nothing] => Request[String, Nothing]`
 // the default is `identity`
-val responseData = client.callAndDecode[Params.T, GetLongResponse](Query(TestSchema.Queries.getLong), Params())
+val responseData = client.requestAndDecode[Params.T, GetLongResponse](Query(TestSchema.Queries.getLong), Params())
 
 ```
 
