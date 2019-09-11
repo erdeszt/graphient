@@ -71,9 +71,7 @@ class ClientSpec extends FunSpec with Matchers with BeforeAndAfterAll {
     it("querying through the client for no arguments, no headers and scalar output") {
       val request = client.request(Query(TestSchema.Queries.getLong), Params(), Map.empty)
 
-      request.unsafeRunSync().headers.forall {
-        case (k, _) => Set("Accept-Encoding", "Content-Type").contains(k)
-      } shouldBe true
+      request.unsafeRunSync().headers.map(_._1).toSet shouldBe Set("Accept-Encoding", "Content-Type")
 
       val response: Response[String] = request.flatMap(_.send()).unsafeRunSync()
 
