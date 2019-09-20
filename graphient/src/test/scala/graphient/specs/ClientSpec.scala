@@ -57,7 +57,7 @@ class ClientSpec extends FunSpec with Matchers with BeforeAndAfterAll {
     it("querying through the client") {
       val expectedToken = "Bearer token"
       val request: Either[GraphqlCallError, Request[String, Nothing]] = client
-        .createRequest(Query(TestSchema.Queries.getUser), Params("userId" -> 1L), Map("Authorization" -> expectedToken))
+        .createRequest(Query(TestSchema.Queries.getUser), Params("userId" -> 1L), "Authorization" -> expectedToken)
 
       request.isRight shouldBe true
       request.right.get.headers.exists { case (k, v) => k.equals("Authorization") && v.equals(expectedToken) } shouldBe true

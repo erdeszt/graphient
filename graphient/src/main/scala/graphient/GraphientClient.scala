@@ -15,7 +15,7 @@ class GraphientClient(schema: Schema[_, _], endpoint: Uri) {
   def createRequest[P: Encoder](
       call:      GraphqlCall[_, _],
       variables: P,
-      headers:   Map[String, String] = Map.empty
+      headers:   (String, String)*
   ): Either[GraphqlCallError, Request[String, Nothing]] = {
     queryGenerator.generateQuery(call).map { query =>
       val renderedQuery = QueryRenderer.render(query)
@@ -25,21 +25,21 @@ class GraphientClient(schema: Schema[_, _], endpoint: Uri) {
         .body(payload)
         .contentType("application/json")
         .post(endpoint)
-        .headers(headers)
+        .headers(headers.toMap)
     }
   }
 
   def call[F[_], P: Encoder, T: Decoder](
       call:             GraphqlCall[_, _],
       variables:        P,
-      transformRequest: Request[String, Nothing] => Request[String, Nothing] = identity
+      headers:          (String, String)*
   )(implicit backend:   SttpBackend[F, _], effect: Sync[F]): F[T] = {
     for {
-      request <- createRequest(call, variables) match {
+      request <- createRequest(call, variables, headers:_*) match {
         case Left(error)         => effect.raiseError[Request[String, Nothing]](error)
         case Right(requestValue) => effect.pure(requestValue)
       }
-      rawResponse <- transformRequest(request).send()
+      rawResponse <- request.send()
       rawResponseBody     = rawResponse.body.leftMap(GraphqlClientError)
       decodedResponseBody = rawResponseBody.flatMap(decode[RawGraphqlResponse[T]])
       response <- decodedResponseBody match {
