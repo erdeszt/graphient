@@ -4,8 +4,7 @@ import cats.effect.Sync
 import cats.implicits._
 import io.circe.parser.decode
 import com.softwaremill.sttp._
-import io.circe.Decoder.Result
-import io.circe.{Decoder, Encoder, HCursor}
+import io.circe.{Decoder, Encoder}
 import sangria.renderer.QueryRenderer
 import sangria.schema.Schema
 
@@ -30,34 +29,20 @@ class GraphientClient(schema: Schema[_, _], endpoint: Uri) {
     }
   }
 
-  case class DataWrapper[T](fieldName: String, value: T)
-
-  def dataWrapperDecoder[T: Decoder](fieldName: String): Decoder[DataWrapper[T]] = new Decoder[DataWrapper[T]] {
-    def apply(c: HCursor): Result[DataWrapper[T]] = {
-      val field   = c.downField(fieldName)
-      val payload = implicitly[Decoder[T]].tryDecode(field)
-
-      payload.map(DataWrapper(fieldName, _))
-    }
-  }
-
   def call[F[_], P: Encoder, T: Decoder](
       call:           GraphqlCall[_, _],
       variables:      P,
       headers:        (String, String)*
   )(implicit backend: SttpBackend[F, _], effect: Sync[F]): F[T] = {
+    implicit val dataWrapperDecoder: Decoder[DataWrapper[T]] = DataWrapper.createDecoder[T](call.field.name)
     for {
       request <- createRequest(call, variables, headers: _*) match {
         case Left(error)         => effect.raiseError[Request[String, Nothing]](error)
         case Right(requestValue) => effect.pure(requestValue)
       }
       rawResponse <- request.send()
-      rawResponseBody = rawResponse.body.leftMap(GraphqlClientError)
-      decodedResponseBody = rawResponseBody.flatMap { body =>
-        decode[RawGraphqlResponse[DataWrapper[T]]](body)(
-          RawGraphqlResponse.graphqlResponseDecoder(dataWrapperDecoder[T](call.field.name))
-        )
-      }
+      rawResponseBody     = rawResponse.body.leftMap(GraphqlClientError)
+      decodedResponseBody = rawResponseBody.flatMap(decode[RawGraphqlResponse[DataWrapper[T]]])
       response <- decodedResponseBody match {
         case Left(error) => effect.raiseError[T](error)
         case Right(response) =>
