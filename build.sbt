@@ -4,7 +4,7 @@ lazy val graphient = (project in file("graphient"))
   .settings(
     name := "graphient",
     scalaVersion := "2.12.6",
-    version := "3.0.0",
+    version := "4.0.0",
     scalacOptions ++= Seq(
       "-deprecation",
       "-encoding",
