@@ -22,15 +22,6 @@ class QueryGenerator[C, R](schema: Schema[C, R]) extends FieldLookup {
     }).map(_ => generateQueryUnsafe(call))
   }
 
-  def generateQueryWithFieldName[Ctx, T](
-      call: GraphqlCall[Ctx, T]
-  ): Either[GraphqlCallError, (String, ast.Document)] = {
-    getField(schema, call match {
-      case Query(field)    => QueryByName(field.name)
-      case Mutation(field) => MutationByName(field.name)
-    }).map(_ => (call.field.name, generateQueryUnsafe(call)))
-  }
-
   private def generateQueryUnsafe[Ctx, T](call: GraphqlCall[Ctx, T]): ast.Document = {
     val (field, operationType) = call match {
       case Query(f)    => (f, ast.OperationType.Query)
