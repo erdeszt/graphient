@@ -30,18 +30,19 @@ class GraphientClient(schema: Schema[_, _], endpoint: Uri) {
   }
 
   def call[F[_], P: Encoder, T: Decoder](
-      call:             GraphqlCall[_, _],
-      variables:        P,
-      headers:          (String, String)*
-  )(implicit backend:   SttpBackend[F, _], effect: Sync[F]): F[T] = {
+      call:           GraphqlCall[_, _],
+      variables:      P,
+      headers:        (String, String)*
+  )(implicit backend: SttpBackend[F, _], effect: Sync[F]): F[T] = {
+    implicit val dataWrapperDecoder: Decoder[DataWrapper[T]] = DataWrapper.createDecoder[T](call.field.name)
     for {
-      request <- createRequest(call, variables, headers:_*) match {
+      request <- createRequest(call, variables, headers: _*) match {
         case Left(error)         => effect.raiseError[Request[String, Nothing]](error)
         case Right(requestValue) => effect.pure(requestValue)
       }
       rawResponse <- request.send()
       rawResponseBody     = rawResponse.body.leftMap(GraphqlClientError)
-      decodedResponseBody = rawResponseBody.flatMap(decode[RawGraphqlResponse[T]])
+      decodedResponseBody = rawResponseBody.flatMap(decode[RawGraphqlResponse[DataWrapper[T]]])
       response <- decodedResponseBody match {
         case Left(error) => effect.raiseError[T](error)
         case Right(response) =>
@@ -52,7 +53,7 @@ class GraphientClient(schema: Schema[_, _], endpoint: Uri) {
               effect.raiseError[T](GraphqlClientError("Error fields is present but empty"))
             case (Some(firstError :: _), _) =>
               effect.raiseError[T](firstError)
-            case (None, Some(data)) => effect.pure(data)
+            case (None, Some(data)) => effect.pure(data.value)
           }
       }
     } yield response

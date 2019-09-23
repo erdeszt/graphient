@@ -48,10 +48,6 @@ class ClientSpec extends FunSpec with Matchers with BeforeAndAfterAll {
 
     implicit val emptyResponseDecoder = deriveDecoder[EmptyResponse]
 
-    case class GetLongResponse(getLong: Long)
-
-    implicit val getLongDecoder = deriveDecoder[GetLongResponse]
-
     val client = new GraphientClient(TestSchema.schema, uri"http://localhost:8080/graphql")
 
     it("querying through the client") {
@@ -82,17 +78,29 @@ class ClientSpec extends FunSpec with Matchers with BeforeAndAfterAll {
     it("decoding to response") {
       val response =
         client
-          .call[IO, Params.T, GetLongResponse](Query(TestSchema.Queries.getLong), Params())
+          .call[IO, Params.T, Long](Query(TestSchema.Queries.getLong), Params())
           .unsafeRunSync()
 
-      response.getLong shouldBe 420
+      response shouldBe 420
+    }
+
+    it("decoding to object response") {
+      implicit val addressDecoder = deriveDecoder[TestSchema.Domain.Address]
+      implicit val userDecoder    = deriveDecoder[TestSchema.Domain.User]
+      val response =
+        client
+          .call[IO, Params.T, TestSchema.Domain.User](Query(TestSchema.Queries.getUser), Params("userId" -> 1L))
+          .unsafeRunSync()
+
+      response.id shouldBe 12L
+      response.name shouldBe "test"
     }
 
     it("decoding error response") {
       val response =
         client
-          .call[IO, Params.T, GetLongResponse](Query(TestSchema.Queries.raiseError), Params())
-          .map(Right(_): Either[Throwable, GetLongResponse])
+          .call[IO, Params.T, Long](Query(TestSchema.Queries.raiseError), Params())
+          .map(Right(_): Either[Throwable, Long])
           .handleErrorWith(error => IO.pure(Left(error)))
           .unsafeRunSync()
 

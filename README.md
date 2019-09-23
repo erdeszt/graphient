@@ -8,7 +8,7 @@
 #### Add the package to your build:
 
 ```scala
-libraryDependencies += "io.github.erdeszt" %% "graphient" % "3.0.0"
+libraryDependencies += "io.github.erdeszt" %% "graphient" % "4.0.0"
 resolvers += Resolver.bintrayRepo("erdeszt", "io.github.erdeszt")
 ```
 
@@ -34,14 +34,11 @@ val request = client.createRequest(Query(TestSchema.Queries.getUser), Params("us
 val response = request.send()
 
 // Using the higher level api (with circe decoding):
-case class GetLongResponse(getLong: Long)
-implicit val getLongResponseDecoder: Decoder[GetLongResponse] = deriveDecoder[GetLongResponse]
-
-// `responseData` is an F[GetLongResponse] where F is your effect type(has to support cats-effect `Sync`).
+// `responseData` is an F[User] where F is your effect type(has to support cats-effect `Sync`).
 // You can add extra headers the same way as in `createRequest` passing in a variable number of `(String, String)` args
 // starting from position 3
 // The imported sttp backend has to use the same F effect
-val responseData = client.call[F, Params.T, GetLongResponse](Query(TestSchema.Queries.getLong), Params())
+val responseData = client.call[F, Params.T, TestSchema.Domain.User](Query(TestSchema.Queries.getUser), Params("userId" -> 1L))
 
 ```
 
