@@ -17,6 +17,10 @@ object Dependencies {
     "io.circe" %% "circe-optics" % "0.12.0"
   ).map(_ % Test)
 
+  lazy val spray = Seq(
+    "io.spray" %% "spray-json" % "1.3.2"
+  )
+
   lazy val cats = Seq(
     "org.typelevel" %% "cats-core" % "2.0.0",
     "org.typelevel" %% "cats-effect" % "2.0.0"

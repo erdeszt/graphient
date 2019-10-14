@@ -4,7 +4,7 @@ import cats.effect.{Fiber, IO}
 import com.softwaremill.sttp._
 import com.softwaremill.sttp.asynchttpclient.cats.AsyncHttpClientCatsBackend
 import graphient._
-import graphient.Implicits._
+import graphient.serializer.circe._
 import io.circe.Encoder
 import io.circe.generic.semiauto._
 import org.scalatest._

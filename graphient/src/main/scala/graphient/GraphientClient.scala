@@ -1,11 +1,10 @@
 package graphient
 
-import io.circe.parser.decode
 import com.softwaremill.sttp._
 import cats.syntax.flatMap._
 import cats.syntax.either._
 import cats.syntax.functor._
-import io.circe.{Decoder, Encoder}
+import graphient.serializer._
 import sangria.renderer.QueryRenderer
 import sangria.schema.Schema
 
@@ -13,29 +12,35 @@ class GraphientClient(schema: Schema[_, _], endpoint: Uri) {
 
   private val queryGenerator = new QueryGenerator(schema)
 
-  def createRequest[P: Encoder](
-      call:      GraphqlCall[_, _],
-      variables: P,
-      headers:   (String, String)*
-  ): Either[GraphqlCallError, Request[String, Nothing]] = {
+  def createRequest[P](
+      call:           GraphqlCall[_, _],
+      variables:      P,
+      headers:        (String, String)*
+  )(implicit encoder: Encoder[GraphqlRequest[P]]): Either[GraphqlCallError, Request[String, Nothing]] = {
     queryGenerator.generateQuery(call).map { query =>
       val renderedQuery = QueryRenderer.render(query)
       val payload       = GraphqlRequest(renderedQuery, variables)
+      val body          = StringBody(encoder.encode(payload), "UTF-8", Some("application/json"))
 
       sttp
-        .body(payload)
+        .body(body)
         .contentType("application/json")
         .post(endpoint)
         .headers(headers.toMap)
     }
   }
 
-  def call[F[_], P: Encoder, T: Decoder](
-      call:           GraphqlCall[_, _],
-      variables:      P,
-      headers:        (String, String)*
-  )(implicit backend: SttpBackend[F, _], effect: cats.MonadError[F, Throwable]): F[T] = {
-    implicit val dataWrapperDecoder: Decoder[DataWrapper[T]] = DataWrapper.createDecoder[T](call.field.name)
+  def call[F[_], P, T](
+      call:      GraphqlCall[_, _],
+      variables: P,
+      headers:   (String, String)*
+  )(
+      implicit
+      backend: SttpBackend[F, _],
+      effect:  cats.MonadError[F, Throwable],
+      encoder: Encoder[GraphqlRequest[P]],
+      decoder: Decoder[RawGraphqlResponse[T]]
+  ): F[T] = {
     for {
       request <- createRequest(call, variables, headers: _*) match {
         case Left(error)         => effect.raiseError[Request[String, Nothing]](error)
@@ -43,7 +48,7 @@ class GraphientClient(schema: Schema[_, _], endpoint: Uri) {
       }
       rawResponse <- request.send()
       rawResponseBody     = rawResponse.body.leftMap(GraphqlClientError)
-      decodedResponseBody = rawResponseBody.flatMap(decode[RawGraphqlResponse[DataWrapper[T]]])
+      decodedResponseBody = rawResponseBody.flatMap(decoder.decode)
       response <- decodedResponseBody match {
         case Left(error) => effect.raiseError[T](error)
         case Right(response) =>
@@ -54,9 +59,14 @@ class GraphientClient(schema: Schema[_, _], endpoint: Uri) {
               effect.raiseError[T](GraphqlClientError("Error fields is present but empty"))
             case (Some(firstError :: _), _) =>
               effect.raiseError[T](firstError)
-            case (None, Some(data)) => effect.pure(data.value)
+            case (None, Some(data)) =>
+              data.headOption match {
+                case None                     => effect.raiseError[T](GraphqlClientError("Inconsistent response (no values in data)"))
+                case Some((_, queryResponse)) => effect.pure(queryResponse)
+              }
           }
       }
     } yield response
   }
+
 }

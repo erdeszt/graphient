@@ -1,8 +1,21 @@
-package graphient
+package graphient.serializer
 
-import io.circe.{Encoder, Json}
+import io.circe.Json
+import io.circe.syntax._
 
-object Implicits {
+object circe {
+
+  implicit def circeEncoder[T](implicit encoder: io.circe.Encoder[T]): Encoder[T] = {
+    { value: T =>
+      value.asJson.noSpaces
+    }
+  }
+
+  implicit def circeDecoder[T](implicit decoder: io.circe.Decoder[T]): Decoder[T] = {
+    { responseBody: String =>
+      io.circe.parser.decode(responseBody)
+    }
+  }
 
   private def unsafe(x: Option[Json], `type`: String): Json = {
     x.getOrElse(throw new Exception(s"Invalid ${`type`} value"))
@@ -37,6 +50,6 @@ object Implicits {
     }
   }
 
-  implicit val mapOfStringToAnyCirceEncoder: Encoder[Map[String, Any]] = convertValue
+  implicit val mapOfStringToAnyCirceEncoder: io.circe.Encoder[Map[String, Any]] = convertValue
 
 }
