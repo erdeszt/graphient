@@ -1,9 +1,10 @@
 package graphient
 
-import cats.effect.Sync
-import cats.implicits._
 import io.circe.parser.decode
 import com.softwaremill.sttp._
+import cats.syntax.flatMap._
+import cats.syntax.either._
+import cats.syntax.functor._
 import io.circe.{Decoder, Encoder}
 import sangria.renderer.QueryRenderer
 import sangria.schema.Schema
@@ -33,7 +34,7 @@ class GraphientClient(schema: Schema[_, _], endpoint: Uri) {
       call:           GraphqlCall[_, _],
       variables:      P,
       headers:        (String, String)*
-  )(implicit backend: SttpBackend[F, _], effect: Sync[F]): F[T] = {
+  )(implicit backend: SttpBackend[F, _], effect: cats.MonadError[F, Throwable]): F[T] = {
     implicit val dataWrapperDecoder: Decoder[DataWrapper[T]] = DataWrapper.createDecoder[T](call.field.name)
     for {
       request <- createRequest(call, variables, headers: _*) match {
