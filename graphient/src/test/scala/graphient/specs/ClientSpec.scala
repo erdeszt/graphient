@@ -20,9 +20,11 @@ class ClientSpec extends FunSpec with Matchers with BeforeAndAfterAll {
     implicit val gupEncoder: Encoder[GetUserPayload] = deriveEncoder[GetUserPayload]
   }
 
-  implicit val contextShift = IO.contextShift(global)
-  implicit val timer        = IO.timer(global)
-  implicit val backend      = AsyncHttpClientCatsBackend[IO]()
+  implicit val contextShift   = IO.contextShift(global)
+  implicit val timer          = IO.timer(global)
+  implicit val backend        = AsyncHttpClientCatsBackend[IO]()
+  implicit val addressDecoder = deriveDecoder[TestSchema.Domain.Address]
+  implicit val userDecoder    = deriveDecoder[TestSchema.Domain.User]
 
   var serverThread = None: Option[Fiber[IO, Unit]]
 
@@ -85,8 +87,6 @@ class ClientSpec extends FunSpec with Matchers with BeforeAndAfterAll {
     }
 
     it("decoding to object response") {
-      implicit val addressDecoder = deriveDecoder[TestSchema.Domain.Address]
-      implicit val userDecoder    = deriveDecoder[TestSchema.Domain.User]
       val response =
         client
           .call[IO, Params.T, TestSchema.Domain.User](Query(TestSchema.Queries.getUser), Params("userId" -> 1L))

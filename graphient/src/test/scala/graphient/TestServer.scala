@@ -89,7 +89,7 @@ object TestServer extends KleisliSyntax {
             val or = OptionT.liftF(response)
 
             or
-
+          case _ => OptionT.liftF(NotFound("not found"))
         }
       )
       .orNotFound

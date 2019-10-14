@@ -31,8 +31,8 @@ object Implicits {
         Json.arr(list.map(convertValue): _*)
       case array: Array[_] =>
         Json.arr(array.map(convertValue): _*)
-      case obj: Map[String, _] =>
-        Json.obj(obj.toList.map { case (k, v) => (k, convertValue(v)) }: _*)
+      case obj: Map[_, _] =>
+        Json.obj(obj.toList.map { case (k, v) => (k.asInstanceOf[String], convertValue(v)) }: _*)
 
     }
   }
