@@ -8,7 +8,7 @@
 #### Add the package to your build:
 
 ```scala
-libraryDependencies += "io.github.erdeszt" %% "graphient" % "4.0.0"
+libraryDependencies += "io.github.erdeszt" %% "graphient" % "4.0.1"
 resolvers += Resolver.bintrayRepo("erdeszt", "io.github.erdeszt")
 ```
 
@@ -34,7 +34,7 @@ val request = client.createRequest(Query(TestSchema.Queries.getUser), Params("us
 val response = request.send()
 
 // Using the higher level api (with circe decoding):
-// `responseData` is an F[User] where F is your effect type(has to support cats-effect `Sync`).
+// `responseData` is an F[User] where F is your effect type(has to support cats-effect `MonadError[F, Throwable]`).
 // You can add extra headers the same way as in `createRequest` passing in a variable number of `(String, String)` args
 // starting from position 3
 // The imported sttp backend has to use the same F effect
