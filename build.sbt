@@ -13,7 +13,6 @@ lazy val ScalacOptions = Seq(
   "-unchecked",
   "-Xfuture",
   "-Xlint",
-  "-Xfatal-warnings",
   "-Yno-adapted-args",
   "-Ypartial-unification",
   "-Ywarn-extra-implicit",
@@ -28,9 +27,13 @@ lazy val ScalacOptions = Seq(
   "-Ywarn-unused:patvars",
   "-Ywarn-unused:privates",
   "-Ywarn-value-discard",
-)
+) ++ {
+  if (scala.sys.env.getOrElse("CI", "") == "true") {
+    Seq("-Xfatal-warnings")
+  } else { Seq() }
+}
 
-lazy val graphient = (project in file("graphient"))
+lazy val graphientCore = (project in file("graphient"))
   .settings(
     name := "graphient",
     scalaVersion := "2.12.6",
@@ -42,13 +45,22 @@ lazy val graphient = (project in file("graphient"))
     licenses += ("MIT", url("http://opensource.org/licenses/MIT")),
     addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.9.7"),
     libraryDependencies ++= sangria,
-    libraryDependencies ++= circe,
     libraryDependencies ++= cats,
     libraryDependencies ++= sttp,
     libraryDependencies ++= scalaTest.map(_ % Test),
-    libraryDependencies ++= circeTest,
-    libraryDependencies ++= http4s.map(_ % Test)
   )
+
+lazy val graphientCirce = (project in file("graphient-circe"))
+  .settings(
+    name := "graphient-circe",
+    scalaVersion := "2.12.6",
+    version := "1.0.0",
+    scalacOptions ++= ScalacOptions,
+    resolvers += Resolver.sonatypeRepo("releases"),
+    addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.9.7"),
+    libraryDependencies ++= circe,
+    libraryDependencies ++= scalaTest.map(_ % Test),
+  ).dependsOn(graphientCore)
 
 lazy val graphientSpray = (project in file("graphient-spray"))
   .settings(
@@ -60,7 +72,6 @@ lazy val graphientSpray = (project in file("graphient-spray"))
     addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.9.7"),
     libraryDependencies ++= spray,
     libraryDependencies ++= scalaTest.map(_ % Test),
-    libraryDependencies += "com.softwaremill.sttp" %% "async-http-client-backend-cats" % "1.6.7" % Test,
-  ).dependsOn(graphient)
+  ).dependsOn(graphientCore)
 
-lazy val graphientProject = (project in file(".")).aggregate(graphient, graphientSpray)
+lazy val graphientProject = (project in file(".")).aggregate(graphientCore, graphientCirce, graphientSpray)

@@ -1,9 +1,11 @@
 package graphient.serializer
 
+import graphient.{GraphqlRequest, GraphqlResponseError, GraphqlResponseErrorLocation, RawGraphqlResponse}
 import io.circe.Json
 import io.circe.syntax._
+import io.circe.generic.semiauto._
 
-object circe {
+object Circe {
 
   implicit def circeEncoder[T](implicit encoder: io.circe.Encoder[T]): Encoder[T] = {
     { value: T =>
@@ -50,6 +52,10 @@ object circe {
     }
   }
 
+  implicit val graphqlResponseErrorLocationCirceDecoder = deriveDecoder[GraphqlResponseErrorLocation]
+  implicit val graphqlResponseErrorCirceDecoder         = deriveDecoder[GraphqlResponseError]
+  implicit def rawGraphqlResponseCirceDecoder[T: io.circe.Decoder] = deriveDecoder[RawGraphqlResponse[T]]
+  implicit def graphqlRequestCirceEncoder[T:     io.circe.Encoder] = deriveEncoder[GraphqlRequest[T]]
   implicit val mapOfStringToAnyCirceEncoder: io.circe.Encoder[Map[String, Any]] = convertValue
 
 }

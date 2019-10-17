@@ -34,12 +34,4 @@ object Dependencies {
     "org.scalatest" %% "scalatest" % "3.0.5"
   )
 
-  private lazy val http4sVersion = "0.20.10"
-  lazy val http4s = Seq(
-    "org.http4s" %% "http4s-dsl" % http4sVersion,
-    "org.http4s" %% "http4s-blaze-server" % http4sVersion,
-    "org.http4s" %% "http4s-circe" % http4sVersion,
-    "com.softwaremill.sttp" %% "async-http-client-backend-cats" % "1.6.7"
-  )
-
 }

@@ -1,7 +1,7 @@
 package graphient
 
 import io.circe.Decoder
-import io.circe.generic.semiauto._
+//import io.circe.generic.semiauto._
 
 case class RawGraphqlResponse[T](
     data:   Option[Map[String, T]],
@@ -10,6 +10,6 @@ case class RawGraphqlResponse[T](
 
 object RawGraphqlResponse {
 
-  implicit def graphqlResponse2Decoder[T: Decoder] = deriveDecoder[RawGraphqlResponse[T]]
+//  implicit def graphqlResponse2Decoder[T: Decoder] = deriveDecoder[RawGraphqlResponse[T]]
 
 }
