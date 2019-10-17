@@ -18,7 +18,6 @@ lazy val graphient = (project in file("graphient"))
       "-unchecked",
       "-Xfuture",
       "-Xlint",
-      "-Xfatal-warnings",
       "-Yno-adapted-args",
       "-Ypartial-unification",
       "-Ywarn-extra-implicit",
@@ -34,6 +33,14 @@ lazy val graphient = (project in file("graphient"))
       "-Ywarn-unused:privates",
       "-Ywarn-value-discard",
     ),
+    scalacOptions ++= {
+      if (scala.sys.env.getOrElse("CI", "false") == "true")  {
+        Seq("-Xfatal-warnings")
+      }
+      else {
+        Seq()
+      }
+    },
     resolvers += Resolver.sonatypeRepo("releases"),
     bintrayRepository := "io.github.erdeszt",
     organization := "io.github.erdeszt",
