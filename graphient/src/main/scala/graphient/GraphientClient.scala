@@ -31,6 +31,26 @@ class GraphientClient(schema: Schema[_, _], endpoint: Uri) {
     }
   }
 
+  def call[T]: CallOp[T] = {
+    new CallOp[T]
+  }
+
+  final class CallOp[T] {
+    def apply[F[_], P](
+        graphqlCall: GraphqlCall[_, _],
+        variables:   P,
+        headers:     (String, String)*
+    )(
+        implicit
+        backend: SttpBackend[F, _],
+        effect:  cats.MonadError[F, Throwable],
+        encoder: Encoder[GraphqlRequest[P]],
+        decoder: Decoder[RawGraphqlResponse[T]]
+    ): F[T] = {
+      call[F, P, T](graphqlCall, variables, headers: _*)
+    }
+  }
+
   def call[F[_], P, T](
       call:      GraphqlCall[_, _],
       variables: P,

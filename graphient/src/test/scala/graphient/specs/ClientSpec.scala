@@ -1,14 +1,18 @@
 package graphient.specs
 
+import cats.data.NonEmptyList
 import com.softwaremill.sttp._
 import com.softwaremill.sttp.testing.SttpBackendStub
 import graphient.{GraphientClient, QueryGenerator, TestSchema}
 import graphient.model._
 import graphient.serializer.{Decoder, Encoder}
+import graphient.IdMonadError._
 import org.scalacheck.{Arbitrary, Gen}
 import org.scalatest._
 import org.scalatest.prop.PropertyChecks
 import sangria.renderer.QueryRenderer
+
+import scala.util.Try
 
 class ClientSpec extends FunSpec with PropertyChecks with Matchers {
 
@@ -92,25 +96,36 @@ class ClientSpec extends FunSpec with PropertyChecks with Matchers {
 
     describe("call") {
 
-      implicit val idMonadError = new cats.MonadError[Id, Throwable] {
-        def raiseError[A](e:       Throwable): Id[A] = throw e
-        def handleErrorWith[A](fa: Id[A])(f: Throwable => Id[A]): Id[A] = {
-          try (fa)
-          catch { case ex: Throwable => f(ex) }
-        }
-        def pure[A](x:        A): Id[A] = x
-        def flatMap[A, B](fa: Id[A])(f: A => Id[B]): Id[B] = f(fa)
-        def tailRecM[A, B](a: A)(f: A => Id[Either[A, B]]): Id[B] = {
-          f(a) match {
-            case Left(a)  => tailRecM[A, B](a)(f)
-            case Right(b) => b
-          }
+      final case class DecoderError() extends Throwable
+
+      type StringDecoder = Decoder[RawGraphqlResponse[String]]
+
+      implicit def nonEmptyListArb[A](implicit arb: Arbitrary[A]): Arbitrary[NonEmptyList[A]] = {
+        Arbitrary {
+          for {
+            head <- arb.arbitrary
+            tail <- Gen.listOf(arb.arbitrary)
+          } yield NonEmptyList(head, tail)
         }
       }
 
-      def createDecoder(result: Either[Throwable, RawGraphqlResponse[String]]): Decoder[RawGraphqlResponse[String]] = {
-        responseBody: String =>
-          result
+      implicit val graphqlResponseErrorLocationArb: Arbitrary[GraphqlResponseErrorLocation] = {
+        Arbitrary {
+          for {
+            line <- Gen.chooseNum[Int](0, 100)
+            column <- Gen.chooseNum[Int](0, 100)
+          } yield GraphqlResponseErrorLocation(line, column)
+        }
+      }
+
+      implicit val graphqlResponseErrorArb: Arbitrary[GraphqlResponseError] = {
+        Arbitrary {
+          for {
+            message <- Gen.alphaNumStr
+            path <- Gen.listOf(Gen.alphaNumStr)
+            locations <- Gen.listOf(graphqlResponseErrorLocationArb.arbitrary)
+          } yield GraphqlResponseError(message, path, locations)
+        }
       }
 
       def createBackend(call: GraphqlCall[_, _]): SttpBackendStub[Id, Nothing] = {
@@ -135,25 +150,97 @@ class ClientSpec extends FunSpec with PropertyChecks with Matchers {
 
       it {
         """should return a successful response
-          |if the call and the decoding is successful and there are no graphql errors
+          |when the call and the decoding is successful and there are no graphql errors
           |""".stripMargin
       } {
-        forAll { call: GraphqlCall[_, _] =>
-          val successMessage = "success"
-          implicit val decoder = createDecoder {
+        forAll { (call: GraphqlCall[_, _], decodedResponse: String) =>
+          implicit val decoder: StringDecoder = _ => {
             Right(
               RawGraphqlResponse[String](
-                data   = Some(Map(call.field.name -> successMessage)),
+                data   = Some(Map(call.field.name -> decodedResponse)),
                 errors = None
               )
             )
           }
           implicit val backend = createBackend(call)
-          val result           = client.call[Id, DummyVariables, String](call, DummyVariables())
+          val result           = client.call[String](call, DummyVariables())
 
-          result shouldBe successMessage
+          result shouldBe decodedResponse
         }
       }
+
+      it("should throw an error when the backend returns an error") {
+        forAll { call: GraphqlCall[_, _] =>
+          implicit val decoder: StringDecoder = _ => Left(DecoderError())
+          implicit val backend = SttpBackendStub.synchronous.whenAnyRequest.thenRespondServerError()
+
+          an[InvalidResponseBody] should be thrownBy {
+            client.call[String](call, DummyVariables())
+          }
+        }
+      }
+
+      it("should throw an exception when the decoder returns Left") {
+        forAll { call: GraphqlCall[_, _] =>
+          implicit val decoder: StringDecoder = _ => Left(DecoderError())
+          implicit val backend = createBackend(call)
+
+          a[DecoderError] should be thrownBy {
+            client.call[String](call, DummyVariables())
+          }
+        }
+      }
+
+      it("should throw an exception when there's no data and no graphql error") {
+        forAll { call: GraphqlCall[_, _] =>
+          implicit val decoder: StringDecoder = _ => Right(RawGraphqlResponse(None, None))
+          implicit val backend = createBackend(call)
+
+          an[InconsistentResponseNoDataNoError] should be thrownBy {
+            client.call[String](call, DummyVariables())
+          }
+        }
+      }
+
+      it("should throw an exception when there's an error field but it's empty") {
+        forAll { call: GraphqlCall[_, _] =>
+          implicit val decoder: StringDecoder = _ => Right(RawGraphqlResponse(None, Some(Nil)))
+          implicit val backend = createBackend(call)
+
+          an[InconsistentResponseEmptyError] should be thrownBy {
+            client.call[String](call, DummyVariables())
+          }
+        }
+      }
+
+      it("should throw an exception when there's a graphql error") {
+        forAll { (call: GraphqlCall[_, _], errors: NonEmptyList[GraphqlResponseError]) =>
+          implicit val decoder: StringDecoder = { _ =>
+            Right(RawGraphqlResponse(None, Some(errors.toList)))
+          }
+          implicit val backend = createBackend(call)
+
+          val result = Try(client.call[String](call, DummyVariables())).toEither
+
+          assert(result.isLeft)
+          assert(result.left.get.isInstanceOf[GraphqlResponseError])
+          result.left.get shouldBe errors.head
+        }
+      }
+
+      it("should throw an exception when the field is not present in the response") {
+        forAll { (call: GraphqlCall[_, _], response: String) =>
+          implicit val decoder: StringDecoder = { _ =>
+            Right(RawGraphqlResponse(Some(Map("wrongFieldName" -> response)), None))
+          }
+          implicit val backend = createBackend(call)
+
+          an[InconsistentResponseNoData] should be thrownBy {
+            client.call[String](call, DummyVariables())
+          }
+        }
+      }
+
     }
 
   }
