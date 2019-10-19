@@ -60,7 +60,7 @@ lazy val graphientCirce = (project in file("graphient-circe"))
     licenses += ("MIT", url("http://opensource.org/licenses/MIT")),
     libraryDependencies ++= circe,
     libraryDependencies ++= scalaTest.map(_ % Test),
-  ).dependsOn(graphientCore)
+  ).dependsOn(graphientCore % "compile->compile;test->test")
 
 lazy val graphientSpray = (project in file("graphient-spray"))
   .settings(
@@ -72,6 +72,6 @@ lazy val graphientSpray = (project in file("graphient-spray"))
     licenses += ("MIT", url("http://opensource.org/licenses/MIT")),
     libraryDependencies ++= spray,
     libraryDependencies ++= scalaTest.map(_ % Test),
-  ).dependsOn(graphientCore)
+  ).dependsOn(graphientCore % "compile->compile;test->test")
 
 lazy val graphientProject = (project in file(".")).aggregate(graphientCore, graphientCirce, graphientSpray)
