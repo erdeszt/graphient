@@ -6,13 +6,12 @@ import graphient.{GraphientClient, QueryGenerator, TestSchema}
 import graphient.IdMonadError._
 import graphient.serializer.spray._
 import org.scalatest._
-import sangria.schema._
 import com.softwaremill.sttp._
 import graphient.model.{GraphqlRequest, Query}
 import _root_.spray.json._
 import sangria.renderer.QueryRenderer
 
-class CirceEncoderSpec extends FunSpec with Matchers with DefaultJsonProtocol {
+class SprayEncoderSpec extends FunSpec with Matchers with DefaultJsonProtocol {
 
   val query         = TestSchema.Queries.getLong
   val renderedQuery = QueryRenderer.render(new QueryGenerator(TestSchema.schema).generateQuery(Query(query)).right.get)

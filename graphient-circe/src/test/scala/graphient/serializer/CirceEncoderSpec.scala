@@ -6,7 +6,6 @@ import io.circe.generic.semiauto._
 import graphient.IdMonadError._
 import graphient.serializer.circe._
 import org.scalatest._
-import sangria.schema._
 import com.softwaremill.sttp._
 import graphient.model.{GraphqlRequest, Query}
 import io.circe.syntax._

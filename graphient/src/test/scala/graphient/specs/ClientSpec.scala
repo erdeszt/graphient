@@ -3,13 +3,12 @@ package graphient.specs
 import cats.data.NonEmptyList
 import com.softwaremill.sttp._
 import com.softwaremill.sttp.testing.SttpBackendStub
-import graphient.{GraphientClient, QueryGenerator, TestSchema, VariableGenerator}
+import graphient.{Generators, GraphientClient, QueryGenerator, TestSchema, VariableGenerator}
 import graphient.model._
 import graphient.serializer._
 import graphient.IdMonadError._
 import graphient.TestSchema.Domain
 import graphient.TestSchema.Domain.UserRepo
-import org.scalacheck.{Arbitrary, Gen}
 import org.scalatest._
 import org.scalatest.prop.PropertyChecks
 import sangria.execution.Executor
@@ -17,7 +16,7 @@ import sangria.renderer.QueryRenderer
 
 import scala.util.Try
 
-class ClientSpec extends FunSpec with PropertyChecks with Matchers {
+class ClientSpec extends FunSpec with PropertyChecks with Matchers with Generators {
 
   case class DummyVariables()
 
@@ -25,20 +24,6 @@ class ClientSpec extends FunSpec with PropertyChecks with Matchers {
     def encode(requestBody: GraphqlRequest[DummyVariables]): String = {
       s"[request|${requestBody.query}|dummy:encoded]"
     }
-  }
-
-  case class Header(key: String, value: String)
-
-  implicit val graphqlCallArb: Arbitrary[GraphqlCall[_, _]] = Arbitrary(
-    Gen.oneOf(
-      Gen.oneOf(TestSchema.Queries.schema.fields).map(Query(_)):      Gen[GraphqlCall[_, _]],
-      Gen.oneOf(TestSchema.Mutations.schema.fields).map(Mutation(_)): Gen[GraphqlCall[_, _]]
-    ))
-  implicit val headerArb = Arbitrary {
-    for {
-      key <- Gen.nonEmptyListOf(Gen.alphaChar).map(_.mkString(""))
-      value <- Gen.nonEmptyListOf(Gen.alphaChar).map(_.mkString(""))
-    } yield Header(key, value)
   }
 
   val fakeEndpoint   = uri"http://fakehost"
@@ -102,34 +87,6 @@ class ClientSpec extends FunSpec with PropertyChecks with Matchers {
       final case class DecoderError() extends Throwable
 
       type StringDecoder = Decoder[RawGraphqlResponse[String]]
-
-      implicit def nonEmptyListArb[A](implicit arb: Arbitrary[A]): Arbitrary[NonEmptyList[A]] = {
-        Arbitrary {
-          for {
-            head <- arb.arbitrary
-            tail <- Gen.listOf(arb.arbitrary)
-          } yield NonEmptyList(head, tail)
-        }
-      }
-
-      implicit val graphqlResponseErrorLocationArb: Arbitrary[GraphqlResponseErrorLocation] = {
-        Arbitrary {
-          for {
-            line <- Gen.chooseNum[Int](0, 100)
-            column <- Gen.chooseNum[Int](0, 100)
-          } yield GraphqlResponseErrorLocation(line, column)
-        }
-      }
-
-      implicit val graphqlResponseErrorArb: Arbitrary[GraphqlResponseError] = {
-        Arbitrary {
-          for {
-            message <- Gen.alphaNumStr
-            path <- Gen.listOf(Gen.alphaNumStr)
-            locations <- Gen.listOf(graphqlResponseErrorLocationArb.arbitrary)
-          } yield GraphqlResponseError(message, path, locations)
-        }
-      }
 
       def createBackend(call: GraphqlCall[_, _]): SttpBackendStub[Id, Nothing] = {
         SttpBackendStub.synchronous
