@@ -2,6 +2,7 @@ package graphient.specs
 
 import graphient.TestSchema.Domain._
 import graphient._
+import graphient.model._
 import org.scalatest._
 import sangria.execution.Executor
 import sangria.marshalling.QueryAstInputUnmarshaller

@@ -5,6 +5,7 @@ import cats.syntax.flatMap._
 import cats.syntax.either._
 import cats.syntax.functor._
 import graphient.serializer._
+import graphient.model._
 import sangria.renderer.QueryRenderer
 import sangria.schema.Schema
 
@@ -47,24 +48,18 @@ class GraphientClient(schema: Schema[_, _], endpoint: Uri) {
         case Right(requestValue) => effect.pure(requestValue)
       }
       rawResponse <- request.send()
-      rawResponseBody     = rawResponse.body.leftMap(GraphqlClientError)
-      decodedResponseBody = rawResponseBody.flatMap(decoder.decode)
-      response <- decodedResponseBody match {
-        case Left(error) => effect.raiseError[T](error)
-        case Right(response) =>
-          (response.errors, response.data) match {
-            case (None, None) =>
-              effect.raiseError[T](GraphqlClientError("Inconsistent response (no data, no errors)"))
-            case (Some(Nil), _) =>
-              effect.raiseError[T](GraphqlClientError("Error fields is present but empty"))
-            case (Some(firstError :: _), _) =>
-              effect.raiseError[T](firstError)
-            case (None, Some(data)) =>
-              data.get(call.field.name) match {
-                case None                     => effect.raiseError[T](GraphqlClientError("Inconsistent response (no values in data)"))
-                case Some((_, queryResponse)) => effect.pure(queryResponse)
-              }
-          }
+      rawResponseBody <- effect.fromEither(rawResponse.body.leftMap(InvalidResponseBody))
+      decodedResponse <- effect.fromEither(decoder.decode(rawResponseBody))
+      responseData <- (decodedResponse.errors, decodedResponse.data) match {
+        case (None, None) =>
+          effect.raiseError[Map[String, T]](InconsistentResponseNoDataNoError(decodedResponse))
+        case (Some(Nil), _)             => effect.raiseError[Map[String, T]](InconsistentResponseEmptyError(decodedResponse))
+        case (Some(firstError :: _), _) => effect.raiseError[Map[String, T]](firstError)
+        case (None, Some(data))         => effect.pure(data)
+      }
+      response <- responseData.get(call.field.name) match {
+        case None               => effect.raiseError[T](InconsistentResponseNoData(decodedResponse))
+        case Some(callResponse) => effect.pure(callResponse)
       }
     } yield response
   }

@@ -1,6 +1,6 @@
 package graphient.serializer
 
-import graphient.{GraphqlRequest, GraphqlResponseError, GraphqlResponseErrorLocation, RawGraphqlResponse}
+import graphient.model._
 import io.circe.Json
 import io.circe.syntax._
 import io.circe.generic.semiauto._

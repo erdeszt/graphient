@@ -1,7 +1,8 @@
 package graphient.specs
 
 import com.softwaremill.sttp._
-import graphient.{GraphientClient, GraphqlCall, GraphqlRequest, Mutation, Query, QueryGenerator, TestSchema}
+import graphient.{GraphientClient, QueryGenerator, TestSchema}
+import graphient.model._
 import graphient.serializer.Encoder
 import org.scalacheck.{Arbitrary, Gen}
 import org.scalatest._
@@ -69,6 +70,7 @@ class ClientSpec extends FunSpec with PropertyChecks with Matchers {
             request.method shouldBe Method.POST
             request.uri shouldBe fakeEndpoint
             request.headers should contain theSameElementsAs defaultHeaders
+            ()
           }
         }
       }
@@ -80,6 +82,7 @@ class ClientSpec extends FunSpec with PropertyChecks with Matchers {
 
           assertRight(result) { request =>
             request.headers should contain theSameElementsAs (defaultHeaders ++ extraHeaderList.distinct)
+            ()
           }
         }
       }

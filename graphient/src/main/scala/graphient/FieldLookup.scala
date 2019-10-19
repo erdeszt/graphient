@@ -1,6 +1,7 @@
 package graphient
 
 import sangria.schema._
+import graphient.model._
 
 private[graphient] trait FieldLookup {
 

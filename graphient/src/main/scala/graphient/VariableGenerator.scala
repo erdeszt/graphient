@@ -3,8 +3,8 @@ package graphient
 import cats.implicits._
 import sangria.ast
 import sangria.schema._
-
 import scala.reflect.ClassTag
+import graphient.model._
 
 class VariableGenerator[C, R](schema: Schema[C, R]) extends FieldLookup {
 

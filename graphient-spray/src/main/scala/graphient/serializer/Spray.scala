@@ -1,6 +1,6 @@
 package graphient.serializer
 
-import graphient.{GraphqlRequest, GraphqlResponseError, GraphqlResponseErrorLocation, RawGraphqlResponse}
+import graphient.model._
 import spray.json._
 
 import scala.util.Try

@@ -8,15 +8,17 @@
 #### Add the package to your build:
 
 ```scala
-libraryDependencies += "io.github.erdeszt" %% "graphient" % "4.0.1"
 resolvers += Resolver.bintrayRepo("erdeszt", "io.github.erdeszt")
+libraryDependencies += "io.github.erdeszt" %% "graphient" % "4.0.1"
+libraryDependencies += "io.github.erdeszt" %% "graphient-circe" % "1.0.0" // For circe support
+libraryDependencies += "io.github.erdeszt" %% "graphient-spray" % "1.0.0" // For spray support
 ```
 
-#### Using the client
+#### Using the client(with the circe encoder)
 
 ```scala
-import graphient._
-import graphient.Implicits._
+import graphient.GraphientClient
+import graphient.circe._
 
 // IMPORTANT: You also need to import your preferred sttp backend
 
@@ -26,8 +28,8 @@ val client = new GraphientClient(TestSchema.schema, uri"http://yourapi.com/graph
 // Using the raw sttp api:
 // `request` is a normal sttp request with the body set to the generated graphql query
 // and content type set to application/json. You can add headers directly here or after the request is generated.
-// You can also use any type that is circe encodable as the parameters
-val request = client.createRequest(Query(TestSchema.Queries.getUser), Params("userId" -> 1L), "Authorization" -> "Bearer token")
+// You can also use any type that is encodable as the parameters
+val request = client.createRequest(Query(TestSchema.Queries.getUser), Map("userId" -> 1L), "Authorization" -> "Bearer token")
 
 // When you are ready, send the request to receive the response. You will need to
 // decode the json response.
@@ -38,7 +40,7 @@ val response = request.send()
 // You can add extra headers the same way as in `createRequest` passing in a variable number of `(String, String)` args
 // starting from position 3
 // The imported sttp backend has to use the same F effect
-val responseData = client.call[F, Params.T, TestSchema.Domain.User](Query(TestSchema.Queries.getUser), Params("userId" -> 1L))
+val responseData = client.call[F, Params.T, TestSchema.Domain.User](Query(TestSchema.Queries.getUser), Map("userId" -> 1L))
 
 ```
 
@@ -46,6 +48,7 @@ val responseData = client.call[F, Params.T, TestSchema.Domain.User](Query(TestSc
 
 ```scala
 import graphient._
+import graphient.model._
 
 // Create a query & a variable generator based on some Sangria schema
 // For the definition of the TestSchema check: graphient/src/test/scala/graphient/TestSchema.scala
