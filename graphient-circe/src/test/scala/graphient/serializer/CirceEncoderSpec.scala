@@ -38,6 +38,11 @@ class CirceEncoderSpec extends FunSpec with Matchers {
       client.call[Response](Query(query), Variables()) shouldBe Response()
     }
 
+    ignore("should encode Map[String, Any] correctly") {
+      // TOGO: Implement the generator and the test
+      ()
+    }
+
   }
 
 }

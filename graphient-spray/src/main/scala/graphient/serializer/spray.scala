@@ -18,17 +18,6 @@ object spray extends DefaultJsonProtocol {
     }
   }
 
-  implicit val mapOfStringToAnySprayWriter: JsonFormat[Map[String, Any]] = new JsonFormat[Map[String, Any]] {
-    def write(obj: Map[String, Any]): JsValue = {
-      // TODO
-      ???
-    }
-
-    def read(json: JsValue): Map[String, Any] = {
-      json.convertTo[Map[String, Any]]
-    }
-  }
-
   implicit def graphqlRequestSprayFormat[T: JsonFormat] = jsonFormat2(GraphqlRequest[T](_, _))
   implicit val graphqlResponseErrorLocationSprayForamt = jsonFormat2(GraphqlResponseErrorLocation(_, _))
   implicit val graphqlResponseErrorSprayFormat         = jsonFormat3(GraphqlResponseError(_, _, _))
