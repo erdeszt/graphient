@@ -60,7 +60,7 @@ class GraphientClient(schema: Schema[_, _], endpoint: Uri) {
             case (Some(firstError :: _), _) =>
               effect.raiseError[T](firstError)
             case (None, Some(data)) =>
-              data.headOption match {
+              data.get(call.field.name) match {
                 case None                     => effect.raiseError[T](GraphqlClientError("Inconsistent response (no values in data)"))
                 case Some((_, queryResponse)) => effect.pure(queryResponse)
               }

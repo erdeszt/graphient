@@ -1,15 +1,12 @@
 package graphient.specs
 
 import com.softwaremill.sttp._
-import graphient.TestSchema.Domain
-import graphient.TestSchema.Domain.UserRepo
 import graphient.{GraphientClient, GraphqlCall, GraphqlRequest, Mutation, Query, QueryGenerator, TestSchema}
 import graphient.serializer.Encoder
 import org.scalacheck.{Arbitrary, Gen}
 import org.scalatest._
 import org.scalatest.prop.PropertyChecks
 import sangria.renderer.QueryRenderer
-import sangria.schema.Field
 
 class ClientSpec extends FunSpec with PropertyChecks with Matchers {
 
