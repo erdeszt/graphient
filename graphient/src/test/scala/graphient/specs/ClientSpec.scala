@@ -3,13 +3,16 @@ package graphient.specs
 import cats.data.NonEmptyList
 import com.softwaremill.sttp._
 import com.softwaremill.sttp.testing.SttpBackendStub
-import graphient.{GraphientClient, QueryGenerator, TestSchema}
+import graphient.{GraphientClient, QueryGenerator, TestSchema, VariableGenerator}
 import graphient.model._
 import graphient.serializer.{Decoder, Encoder}
 import graphient.IdMonadError._
+import graphient.TestSchema.Domain
+import graphient.TestSchema.Domain.UserRepo
 import org.scalacheck.{Arbitrary, Gen}
 import org.scalatest._
 import org.scalatest.prop.PropertyChecks
+import sangria.execution.Executor
 import sangria.renderer.QueryRenderer
 
 import scala.util.Try
@@ -239,6 +242,55 @@ class ClientSpec extends FunSpec with PropertyChecks with Matchers {
             client.call[String](call, DummyVariables())
           }
         }
+      }
+
+      describe("integration with the Executor") {
+        import scala.concurrent.Await
+        import scala.concurrent.duration._
+        import scala.concurrent.ExecutionContext.Implicits.global
+        import sangria.ast
+        import sangria.marshalling.QueryAstInputUnmarshaller
+
+        implicit val queryAstInputUnmarshaller: QueryAstInputUnmarshaller = new QueryAstInputUnmarshaller()
+
+        def generateQuery(call: GraphqlCall[_, _]): ast.Document = {
+          new QueryGenerator(TestSchema.schema).generateQuery(call).right.get
+        }
+
+        def generateVariables(call: GraphqlCall[_, _], values: Map[String, Long]): ast.Value = {
+          new VariableGenerator(TestSchema.schema).generateVariables(call, values).right.get
+        }
+
+        object TestUserRepo extends UserRepo {
+          val user = Domain.User(1L, "user1", 1, List(), Domain.Address(1, "city", "street"))
+          def getUser(id: Long): Option[Domain.User] = Some(user)
+          def createUser(
+              name:    String,
+              age:     Option[StatusCode],
+              hobbies: List[String],
+              address: Domain.Address
+          ): Domain.User = user
+        }
+
+        it("should generate a response with the correct field name") {
+          val call = Query(TestSchema.Queries.getUser)
+          val result = Await
+            .result(
+              Executor.execute(
+                TestSchema.schema,
+                generateQuery(call),
+                TestUserRepo,
+                variables = generateVariables(call, Map("userId" -> 1L))
+              ),
+              5 seconds
+            )
+            .asInstanceOf[Map[String, Any]]
+
+          val data = result("data").asInstanceOf[Map[String, Any]]
+
+          assert(data.contains(call.field.name))
+        }
+
       }
 
     }

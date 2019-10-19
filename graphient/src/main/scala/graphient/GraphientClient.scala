@@ -77,7 +77,6 @@ class GraphientClient(schema: Schema[_, _], endpoint: Uri) {
         case (Some(firstError :: _), _) => effect.raiseError[Map[String, T]](firstError)
         case (None, Some(data))         => effect.pure(data)
       }
-      // TODO: Write a test to check if this `call.field.name` is correct
       response <- responseData.get(call.field.name) match {
         case None               => effect.raiseError[T](InconsistentResponseNoData(decodedResponse))
         case Some(callResponse) => effect.pure(callResponse)
