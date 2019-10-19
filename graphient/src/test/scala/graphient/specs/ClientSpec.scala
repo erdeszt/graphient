@@ -1,9 +1,10 @@
 package graphient.specs
 
 import com.softwaremill.sttp._
+import com.softwaremill.sttp.testing.SttpBackendStub
 import graphient.{GraphientClient, QueryGenerator, TestSchema}
 import graphient.model._
-import graphient.serializer.Encoder
+import graphient.serializer.{Decoder, Encoder}
 import org.scalacheck.{Arbitrary, Gen}
 import org.scalatest._
 import org.scalatest.prop.PropertyChecks
@@ -87,6 +88,72 @@ class ClientSpec extends FunSpec with PropertyChecks with Matchers {
         }
       }
 
+    }
+
+    describe("call") {
+
+      implicit val idMonadError = new cats.MonadError[Id, Throwable] {
+        def raiseError[A](e:       Throwable): Id[A] = throw e
+        def handleErrorWith[A](fa: Id[A])(f: Throwable => Id[A]): Id[A] = {
+          try (fa)
+          catch { case ex: Throwable => f(ex) }
+        }
+        def pure[A](x:        A): Id[A] = x
+        def flatMap[A, B](fa: Id[A])(f: A => Id[B]): Id[B] = f(fa)
+        def tailRecM[A, B](a: A)(f: A => Id[Either[A, B]]): Id[B] = {
+          f(a) match {
+            case Left(a)  => tailRecM[A, B](a)(f)
+            case Right(b) => b
+          }
+        }
+      }
+
+      def createDecoder(result: Either[Throwable, RawGraphqlResponse[String]]): Decoder[RawGraphqlResponse[String]] = {
+        responseBody: String =>
+          result
+      }
+
+      def createBackend(call: GraphqlCall[_, _]): SttpBackendStub[Id, Nothing] = {
+        SttpBackendStub.synchronous
+          .whenRequestMatches { request =>
+            // Using matchers for better error messages
+            request.body shouldBe StringBody(
+              dummyEncoder.encode(GraphqlRequest(renderCall(call), DummyVariables())),
+              "UTF-8",
+              Some("application/json")
+            )
+            request.method shouldBe Method.POST
+            request.uri shouldBe fakeEndpoint
+            request.headers should contain theSameElementsAs defaultHeaders
+            // The matchers throw if the request is incorrect so return true if we get here
+            true
+          }
+          // The http response is irrelevant because the decoding result is
+          // controlled by the Decoder mock
+          .thenRespond("irrelevant")
+      }
+
+      it {
+        """should return a successful response
+          |if the call and the decoding is successful and there are no graphql errors
+          |""".stripMargin
+      } {
+        forAll { call: GraphqlCall[_, _] =>
+          val successMessage = "success"
+          implicit val decoder = createDecoder {
+            Right(
+              RawGraphqlResponse[String](
+                data   = Some(Map(call.field.name -> successMessage)),
+                errors = None
+              )
+            )
+          }
+          implicit val backend = createBackend(call)
+          val result           = client.call[Id, DummyVariables, String](call, DummyVariables())
+
+          result shouldBe successMessage
+        }
+      }
     }
 
   }
