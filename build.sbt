@@ -57,7 +57,7 @@ lazy val graphientCirce = (project in file("graphient-circe"))
     version := "1.0.0",
     scalacOptions ++= ScalacOptions,
     resolvers += Resolver.sonatypeRepo("releases"),
-    addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.9.7"),
+    licenses += ("MIT", url("http://opensource.org/licenses/MIT")),
     libraryDependencies ++= circe,
     libraryDependencies ++= scalaTest.map(_ % Test),
   ).dependsOn(graphientCore)
@@ -69,7 +69,7 @@ lazy val graphientSpray = (project in file("graphient-spray"))
     version := "1.0.0",
     scalacOptions ++= ScalacOptions,
     resolvers += Resolver.sonatypeRepo("releases"),
-    addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.9.7"),
+    licenses += ("MIT", url("http://opensource.org/licenses/MIT")),
     libraryDependencies ++= spray,
     libraryDependencies ++= scalaTest.map(_ % Test),
   ).dependsOn(graphientCore)
