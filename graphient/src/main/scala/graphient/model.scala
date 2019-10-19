@@ -27,7 +27,6 @@ object model {
   final case class InconsistentResponseNoDataNoError(response: RawGraphqlResponse[_]) extends GraphqlClientError
   final case class InconsistentResponseEmptyError(response:    RawGraphqlResponse[_]) extends GraphqlClientError
   final case class InconsistentResponseNoData(response:        RawGraphqlResponse[_]) extends GraphqlClientError
-  final case class InvalidGraphqlCall(callError:               GraphqlCallError) extends GraphqlClientError
 
   final case class GraphqlRequest[T](query: String, variables: T)
 

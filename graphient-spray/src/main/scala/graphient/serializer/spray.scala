@@ -1,11 +1,10 @@
 package graphient.serializer
 
 import graphient.model._
-import spray.json._
-
+import _root_.spray.json._
 import scala.util.Try
 
-object Spray extends DefaultJsonProtocol {
+object spray extends DefaultJsonProtocol {
 
   implicit def sprayEncoder[T](implicit jsonFormat: JsonWriter[T]): Encoder[T] = {
     { requestBody: T =>

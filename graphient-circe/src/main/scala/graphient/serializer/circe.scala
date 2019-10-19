@@ -5,7 +5,7 @@ import io.circe.Json
 import io.circe.syntax._
 import io.circe.generic.semiauto._
 
-object Circe {
+object circe {
 
   implicit def circeEncoder[T](implicit encoder: io.circe.Encoder[T]): Encoder[T] = {
     { value: T =>
@@ -48,7 +48,6 @@ object Circe {
         Json.arr(array.map(convertValue): _*)
       case obj: Map[_, _] =>
         Json.obj(obj.toList.map { case (k, v) => (k.asInstanceOf[String], convertValue(v)) }: _*)
-
     }
   }
 

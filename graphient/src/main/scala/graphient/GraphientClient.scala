@@ -4,8 +4,8 @@ import com.softwaremill.sttp._
 import cats.syntax.flatMap._
 import cats.syntax.either._
 import cats.syntax.functor._
-import graphient.serializer._
 import graphient.model._
+import graphient.serializer._
 import sangria.renderer.QueryRenderer
 import sangria.schema.Schema
 

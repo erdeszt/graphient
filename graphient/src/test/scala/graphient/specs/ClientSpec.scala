@@ -5,7 +5,7 @@ import com.softwaremill.sttp._
 import com.softwaremill.sttp.testing.SttpBackendStub
 import graphient.{GraphientClient, QueryGenerator, TestSchema, VariableGenerator}
 import graphient.model._
-import graphient.serializer.{Decoder, Encoder}
+import graphient.serializer._
 import graphient.IdMonadError._
 import graphient.TestSchema.Domain
 import graphient.TestSchema.Domain.UserRepo
