@@ -31,11 +31,11 @@ class GraphientClient(schema: Schema[_, _], endpoint: Uri) {
     }
   }
 
-  def call[T]: CallOp[T] = {
-    new CallOp[T]
+  def call[T]: CallBuilder[T] = {
+    new CallBuilder[T]
   }
 
-  final class CallOp[T] {
+  final class CallBuilder[T] {
     def apply[F[_], P](
         graphqlCall: GraphqlCall[_, _],
         variables:   P,
