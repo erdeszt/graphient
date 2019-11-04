@@ -6,7 +6,7 @@ Library for generating and executing Graphql queries based on [Sangria](https://
 
 ### Usage:
 
-#### Add the package(s) to your build:
+#### Add the packages to your build:
 
 ```scala
 resolvers += Resolver.bintrayRepo("erdeszt", "io.github.erdeszt")
