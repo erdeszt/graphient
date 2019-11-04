@@ -2,10 +2,11 @@
 
 [![Build Status](https://travis-ci.org/erdeszt/graphient.svg?branch=master)](https://travis-ci.org/erdeszt/graphient)
 
+Library for generating and executing graphql queries based on sangria schemas.
 
 ### Usage:
 
-#### Add the package to your build:
+#### Add the package(s) to your build:
 
 ```scala
 resolvers += Resolver.bintrayRepo("erdeszt", "io.github.erdeszt")
@@ -14,34 +15,70 @@ libraryDependencies += "io.github.erdeszt" %% "graphient-circe" % "1.0.0" // For
 libraryDependencies += "io.github.erdeszt" %% "graphient-spray" % "1.0.0" // For spray support
 ```
 
-#### Using the client(with the circe encoder)
+#### Using the high level client
+
+##### Import the graphient package and your favorite serializer:
 
 ```scala
-import graphient.GraphientClient
-import graphient.circe._
+// Graphient client
+import graphient._
+// Graphient serializer
+import graphient.circe._  // for circe support
+// or
+import graphient.spray._  // for spray support
+```
 
-// IMPORTANT: You also need to import your preferred sttp backend
+##### Import your favorite sttp backend(in this example we'll use `AsyncHttpClientCatsBackend` with `IO` from `cats-effect`)
 
-// For the definition of the TestSchema check: graphient/src/test/scala/graphient/TestSchema.scala
+Add the backend to your build:
+```scala
+libraryDependencies += "com.softwaremill.sttp.client" %% "async-http-client-backend-cats" % "1.6.7"
+```
+
+_Graphient uses sttp `1.6.7` so your backend has to be compatible with it._
+
+Create an implicit backend(the effect type has to support `MonadError[?[_], Throwable]` from `cats-effect`):
+
+```scala
+import cats.effect.IO
+import sttp.client.asynchttpclient.cats._
+
+implicit val sttpBackend = AsyncHttpClientCatsBackend[IO]()
+```
+
+##### Create a Graphient client with your schema ([TestSchema definition](https://github.com/erdeszt/graphient/blob/master/graphient/src/test/scala/graphient/TestSchema.scala)):
+
+```scala
+import com.softwaremill.sttp._ // For the `uri` string interpolator
+
 val client = new GraphientClient(TestSchema.schema, uri"http://yourapi.com/graphql")
+```
 
-// Using the raw sttp api:
-// `request` is a normal sttp request with the body set to the generated graphql query
-// and content type set to application/json. You can add headers directly here or after the request is generated.
-// You can also use any type that is encodable as the parameters
-val request = client.createRequest(Query(TestSchema.Queries.getUser), Map("userId" -> 1L), "Authorization" -> "Bearer token")
+##### Executing the queries with the client
 
-// When you are ready, send the request to receive the response. You will need to
-// decode the json response.
-val response = request.send()
+ * execute via the `GraphientClient`
+ 
+    ```scala
+    val query = Query(TestSchema.Queries.getUser)
+    val parameters = Map("userId", 1)
+    val responseData = client.call[TestSchema.Domain.User](query, parameters)
+    ```
+    `responseData` is an `IO[TestSchema.Domain.User]`, errors are propagated using `MonadError` from `cats-effect`
+ * generate the sttp request and execute it manually 
+   
+   ```scala
+   val query = Query(TestSchema.Queries.getUser)
+   val parameters = Map("userId", 1)
+   val request = client.createRequest(query, parameters)
+   ```
+   `request` is an `Either[GraphqlCallError, Request[String, Nothing]]`, you have to unwrap the `Either` and execute the request manually
+   
+##### Adding extra headers
 
-// Using the higher level api (with circe decoding):
-// `responseData` is an F[User] where F is your effect type(has to support cats-effect `MonadError[F, Throwable]`).
-// You can add extra headers the same way as in `createRequest` passing in a variable number of `(String, String)` args
-// starting from position 3
-// The imported sttp backend has to use the same F effect
-val responseData = client.call[F, Params.T, TestSchema.Domain.User](Query(TestSchema.Queries.getUser), Map("userId" -> 1L))
-
+Both `call` and `createRequest` supports adding extra headers to the request by passing in a varying number of `(String, String)` values starting from position 3
+```scala
+client.createRequest(query, parameters, ("Authorization", "Bearer mytoken"))
+client.call(query, parameters, ("Authorization", "Bearer mytoken"))
 ```
 
 #### Other modes
@@ -49,28 +86,32 @@ val responseData = client.call[F, Params.T, TestSchema.Domain.User](Query(TestSc
 ```scala
 import graphient._
 import graphient.model._
+```
 
-// Create a query & a variable generator based on some Sangria schema
-// For the definition of the TestSchema check: graphient/src/test/scala/graphient/TestSchema.scala
+Create a query & a variable generator based on some Sangria schema
+```scala
 val queryGenerator = new QueryGenerator(TestSchema)
 val variableGenerator = new VariableGenerator(TestSchema)
+```
 
-// Generate a query by name
-val queryByName = queryGenerator.generateQuery(QueryByName("getUser"))
-// or by using the definition
+Generate a query using either the schema directly or the name of the query:
+```scala
 val queryByDefinition = queryGenerator.generateQuery(Query(TestSchema.Qeries.getUser))
+val queryByName = queryGenerator.generateQuery(QueryByName("getUser"))
+```
 
-// Generate a mutation by name
-val mutationByName = queryGenerator.generateQuery(MutationByName("createUser"))
-// or by using the definition
+Generate a mutation by either the schema directly or the name of the mutation:
+```scala
 val mutationByDefinition = queryGenerator.generateQuery(Mutation(TestSchema.Mutations.get.createUser))
+val mutationByName = queryGenerator.generateQuery(MutationByName("createUser"))
+```
 
-// Generate variables for the query
+Generate variables for the query and the mutation
+```scala
 val variablesForGetUser = variableGenerator.generateVariables(
   QueryByName("getUser"),
   Map[String, Any]("userId" -> 1L)
 )
-// and for the mutation
 val variablesForCreateUser = variableGenerator.generateVariables(
   MutationByName("createUser"),
   Map[String, Any](
@@ -79,16 +120,20 @@ val variablesForCreateUser = variableGenerator.generateVariables(
     "hobbies" -> List("coding", "debugging")
   )
 )
+```
 
-// You can execute the queries in memory using a sangria.execution.Executor:
+You can execute the queries in memory using a sangria.execution.Executor:
+```scala
 val result = Executor.execute(
   schema      = TestSchema,
   queryAst    = queryByName.right.toOption.get,
   userContext = context,
   variables   = variablesForGetUser.right.toOption.get
 )
+```
 
-// or pretty print it with sangria.renderer.QueryRenderer
+Or pretty print it with sangria.renderer.QueryRenderer along with the variables using the sangria.marshalling.QueryAstInputUnmarshaller
+```scala
 val renderedQuery = QueryRenderer.render(mutationByDefinition.right.toOption.get)
 // =
 // mutation ($name: String!, $age: Int!, $hobbies: [String!]!) {
@@ -100,7 +145,6 @@ val renderedQuery = QueryRenderer.render(mutationByDefinition.right.toOption.get
 //   }
 // }
 
-// along with the variables using the sangria.marshalling.QueryAstInputUnmarshaller
 val unmarshaller = new QueryAstInputUnmarshaller()
 val renderedVariables = unmarshaller.render(variablesForCreateUser.right.toOption.get)
 // = {name:"user 1",age:26,hobbies:["coding","debugging"]}
