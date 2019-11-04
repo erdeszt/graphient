@@ -2,7 +2,7 @@
 
 [![Build Status](https://travis-ci.org/erdeszt/graphient.svg?branch=master)](https://travis-ci.org/erdeszt/graphient)
 
-Library for generating and executing graphql queries based on sangria schemas.
+Library for generating and executing Graphql queries based on [Sangria](https://github.com/sangria-graphql/sangria) schemas.
 
 ### Usage:
 
@@ -70,9 +70,12 @@ val client = new GraphientClient(TestSchema.schema, uri"http://yourapi.com/graph
    val query = Query(TestSchema.Queries.getUser)
    val parameters = Map("userId", 1)
    val request = client.createRequest(query, parameters)
+   val response = request.toOption.get.send() // Do not call .toOption.get in real code!
    ```
    `request` is an `Either[GraphqlCallError, Request[String, Nothing]]`, you have to unwrap the `Either` and execute the request manually
    
+   `response` is an `IO[Response[String]]`
+
 ##### Adding extra headers
 
 Both `call` and `createRequest` supports adding extra headers to the request by passing in a varying number of `(String, String)` values starting from position 3
@@ -94,14 +97,10 @@ val queryGenerator = new QueryGenerator(TestSchema)
 val variableGenerator = new VariableGenerator(TestSchema)
 ```
 
-Generate a query using either the schema directly or the name of the query:
+Generate a query or a mutation using either the schema directly or the name of the query:
 ```scala
 val queryByDefinition = queryGenerator.generateQuery(Query(TestSchema.Qeries.getUser))
 val queryByName = queryGenerator.generateQuery(QueryByName("getUser"))
-```
-
-Generate a mutation by either the schema directly or the name of the mutation:
-```scala
 val mutationByDefinition = queryGenerator.generateQuery(Mutation(TestSchema.Mutations.get.createUser))
 val mutationByName = queryGenerator.generateQuery(MutationByName("createUser"))
 ```
