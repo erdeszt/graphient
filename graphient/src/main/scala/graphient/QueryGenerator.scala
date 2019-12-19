@@ -3,6 +3,7 @@ package graphient
 import sangria.ast
 import sangria.ast.NamedType
 import sangria.schema._
+import graphient.model._
 
 class QueryGenerator[C, R](schema: Schema[C, R]) extends FieldLookup {
 

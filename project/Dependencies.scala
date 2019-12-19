@@ -7,16 +7,6 @@ object Dependencies {
     "org.sangria-graphql" %% "sangria-circe" % "1.2.1"
   )
 
-  private lazy val circeVersion = "0.12.1"
-  lazy val circe = Seq(
-    "io.circe" %% "circe-core" % circeVersion,
-    "io.circe" %% "circe-generic" % circeVersion,
-    "io.circe" %% "circe-parser" % circeVersion
-  )
-  lazy val circeTest = Seq(
-    "io.circe" %% "circe-optics" % "0.12.0"
-  ).map(_ % Test)
-
   lazy val cats = Seq(
     "org.typelevel" %% "cats-core" % "2.0.0",
     "org.typelevel" %% "cats-effect" % "2.0.0"
@@ -27,15 +17,19 @@ object Dependencies {
   )
 
   lazy val scalaTest = Seq(
-    "org.scalatest" %% "scalatest" % "3.0.5"
+    "org.scalatest" %% "scalatest" % "3.0.5",
+    "org.scalacheck" %% "scalacheck" % "1.14.1"
   )
 
-  private lazy val http4sVersion = "0.20.10"
-  lazy val http4s = Seq(
-    "org.http4s" %% "http4s-dsl" % http4sVersion,
-    "org.http4s" %% "http4s-blaze-server" % http4sVersion,
-    "org.http4s" %% "http4s-circe" % http4sVersion,
-    "com.softwaremill.sttp" %% "async-http-client-backend-cats" % "1.6.7"
+  private lazy val circeVersion = "0.12.1"
+  lazy val circe = Seq(
+    "io.circe" %% "circe-core" % circeVersion,
+    "io.circe" %% "circe-generic" % circeVersion,
+    "io.circe" %% "circe-parser" % circeVersion
+  )
+
+  lazy val spray = Seq(
+    "io.spray" %% "spray-json" % "1.3.2"
   )
 
 }

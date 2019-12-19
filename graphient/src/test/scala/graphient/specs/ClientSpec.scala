@@ -1,134 +1,255 @@
 package graphient.specs
 
-import cats.effect.{Fiber, IO}
+import cats.data.NonEmptyList
 import com.softwaremill.sttp._
-import com.softwaremill.sttp.asynchttpclient.cats.AsyncHttpClientCatsBackend
-import graphient._
-import graphient.Implicits._
-import io.circe.Encoder
-import io.circe.generic.semiauto._
+import com.softwaremill.sttp.testing.SttpBackendStub
+import graphient.{Generators, GraphientClient, QueryGenerator, TestSchema, VariableGenerator}
+import graphient.model._
+import graphient.serializer._
+import graphient.IdMonadError._
+import graphient.TestSchema.Domain
+import graphient.TestSchema.Domain.UserRepo
 import org.scalatest._
+import org.scalatest.prop.PropertyChecks
+import sangria.execution.Executor
+import sangria.renderer.QueryRenderer
 
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.Try
 
-class ClientSpec extends FunSpec with Matchers with BeforeAndAfterAll {
+class ClientSpec extends FunSpec with PropertyChecks with Matchers with Generators {
 
-  case class GetUserPayload(userId: Long)
+  case class DummyVariables()
 
-  object GetUserPayload {
-    implicit val gupEncoder: Encoder[GetUserPayload] = deriveEncoder[GetUserPayload]
-  }
-
-  implicit val contextShift   = IO.contextShift(global)
-  implicit val timer          = IO.timer(global)
-  implicit val backend        = AsyncHttpClientCatsBackend[IO]()
-  implicit val addressDecoder = deriveDecoder[TestSchema.Domain.Address]
-  implicit val userDecoder    = deriveDecoder[TestSchema.Domain.User]
-
-  var serverThread = None: Option[Fiber[IO, Unit]]
-
-  override def beforeAll() = {
-    serverThread = Some(TestServer.run.start.unsafeRunSync)
-
-    while (!isServerUp()) {
-      Thread.sleep(1000)
+  implicit val dummyEncoder: Encoder[GraphqlRequest[DummyVariables]] = new Encoder[GraphqlRequest[DummyVariables]] {
+    def encode(requestBody: GraphqlRequest[DummyVariables]): String = {
+      s"[request|${requestBody.query}|dummy:encoded]"
     }
   }
 
-  override def afterAll() = {
-    serverThread.foreach(_.cancel.unsafeRunSync)
+  val fakeEndpoint   = uri"http://fakehost"
+  val client         = new GraphientClient(TestSchema.schema, fakeEndpoint)
+  val queryGenerator = new QueryGenerator(TestSchema.schema)
+  val defaultHeaders = ("Content-Type", "application/json") :: sttp.headers.toList
+
+  def renderCall(call: GraphqlCall[_, _]): String = {
+    queryGenerator.generateQuery(call) match {
+      case Left(error)     => throw new Exception(s"Could not render call: ${call} with error: ${error}")
+      case Right(document) => QueryRenderer.render(document)
+    }
   }
 
-  private def isServerUp(): Boolean = {
-    Try(sttp.get(uri"http://localhost:8080/status").send().unsafeRunSync().code == 200).getOrElse(false)
+  def assertRight[E, T](value: Either[E, T])(action: T => Unit): Unit = {
+    value match {
+      case Left(error)       => fail(s"Not right: ${Left(error)}")
+      case Right(rightValue) => action(rightValue)
+    }
   }
 
-  describe("Client - server integration suite") {
+  describe("GraphientClient") {
 
-    case class EmptyResponse()
+    describe("createRequest") {
 
-    implicit val emptyResponseDecoder = deriveDecoder[EmptyResponse]
+      it("should setup the sttp request correctly") {
+        forAll { call: GraphqlCall[_, _] =>
+          val renderedQuery = renderCall(call)
+          val result        = client.createRequest(call, DummyVariables())
 
-    val client = new GraphientClient(TestSchema.schema, uri"http://localhost:8080/graphql")
+          assertRight(result) { request =>
+            request.body shouldBe StringBody(
+              dummyEncoder.encode(GraphqlRequest(renderedQuery, DummyVariables())),
+              "UTF-8",
+              Some("application/json")
+            )
+            request.method shouldBe Method.POST
+            request.uri shouldBe fakeEndpoint
+            request.headers should contain theSameElementsAs defaultHeaders
+            ()
+          }
+        }
+      }
 
-    it("querying through the client") {
-      val expectedToken = "Bearer token"
-      val request: Either[GraphqlCallError, Request[String, Nothing]] = client
-        .createRequest(Query(TestSchema.Queries.getUser), Params("userId" -> 1L), "Authorization" -> expectedToken)
+      it("should add extra http headers") {
+        forAll { (call: GraphqlCall[_, _], extraHeaders: List[Header]) =>
+          val extraHeaderList = extraHeaders.map(h => (h.key, h.value))
+          val result          = client.createRequest(call, DummyVariables(), extraHeaderList: _*)
 
-      request.isRight shouldBe true
-      request.right.get.headers.exists { case (k, v) => k.equals("Authorization") && v.equals(expectedToken) } shouldBe true
+          assertRight(result) { request =>
+            request.headers should contain theSameElementsAs (defaultHeaders ++ extraHeaderList.distinct)
+            ()
+          }
+        }
+      }
 
-      val response: IO[Response[String]] = request.right.get.send()
-
-      response.unsafeRunSync().code shouldBe 200
     }
 
-    it("querying through the client for no arguments, no headers and scalar output") {
-      val request = client.createRequest(Query(TestSchema.Queries.getLong), Params())
+    describe("call") {
 
-      request.right.get.headers.map(_._1).toSet shouldBe Set("Accept-Encoding", "Content-Type")
+      final case class DecoderError() extends Throwable
 
-      val response: Response[String] = request.right.get.send().unsafeRunSync()
+      type StringDecoder = Decoder[RawGraphqlResponse[String]]
 
-      response.code shouldBe 200
-      response.body shouldBe 'right
-      response.body.right.get shouldBe "{\"data\":{\"getLong\":420}}"
-    }
+      def createBackend(call: GraphqlCall[_, _]): SttpBackendStub[Id, Nothing] = {
+        SttpBackendStub.synchronous
+          .whenRequestMatches { request =>
+            // Using matchers for better error messages
+            request.body shouldBe StringBody(
+              dummyEncoder.encode(GraphqlRequest(renderCall(call), DummyVariables())),
+              "UTF-8",
+              Some("application/json")
+            )
+            request.method shouldBe Method.POST
+            request.uri shouldBe fakeEndpoint
+            request.headers should contain theSameElementsAs defaultHeaders
+            // The matchers throw if the request is incorrect so return true if we get here
+            true
+          }
+          // The http response is irrelevant because the decoding result is
+          // controlled by the Decoder mock
+          .thenRespond("irrelevant")
+      }
 
-    it("decoding to response") {
-      val response =
-        client
-          .call[IO, Params.T, Long](Query(TestSchema.Queries.getLong), Params())
-          .unsafeRunSync()
+      it {
+        """should return a successful response
+          |when the call and the decoding is successful and there are no graphql errors
+          |""".stripMargin
+      } {
+        forAll { (call: GraphqlCall[_, _], decodedResponse: String) =>
+          implicit val decoder: StringDecoder = _ => {
+            Right(
+              RawGraphqlResponse[String](
+                data   = Some(Map(call.field.name -> decodedResponse)),
+                errors = None
+              )
+            )
+          }
+          implicit val backend = createBackend(call)
+          val result           = client.call[String](call, DummyVariables())
 
-      response shouldBe 420
-    }
+          result shouldBe decodedResponse
+        }
+      }
 
-    it("decoding to object response") {
-      val response =
-        client
-          .call[IO, Params.T, TestSchema.Domain.User](Query(TestSchema.Queries.getUser), Params("userId" -> 1L))
-          .unsafeRunSync()
+      it("should throw an error when the backend returns an error") {
+        forAll { call: GraphqlCall[_, _] =>
+          implicit val decoder: StringDecoder = _ => Left(DecoderError())
+          implicit val backend = SttpBackendStub.synchronous.whenAnyRequest.thenRespondServerError()
 
-      response.id shouldBe 12L
-      response.name shouldBe "test"
-    }
+          an[InvalidResponseBody] should be thrownBy {
+            client.call[String](call, DummyVariables())
+          }
+        }
+      }
 
-    it("decoding error response") {
-      val response =
-        client
-          .call[IO, Params.T, Long](Query(TestSchema.Queries.raiseError), Params())
-          .map(Right(_): Either[Throwable, Long])
-          .handleErrorWith(error => IO.pure(Left(error)))
-          .unsafeRunSync()
+      it("should throw an exception when the decoder returns Left") {
+        forAll { call: GraphqlCall[_, _] =>
+          implicit val decoder: StringDecoder = _ => Left(DecoderError())
+          implicit val backend = createBackend(call)
 
-      response shouldBe 'left
+          a[DecoderError] should be thrownBy {
+            client.call[String](call, DummyVariables())
+          }
+        }
+      }
 
-      val error = response.left.get
+      it("should throw an exception when there's no data and no graphql error") {
+        forAll { call: GraphqlCall[_, _] =>
+          implicit val decoder: StringDecoder = _ => Right(RawGraphqlResponse(None, None))
+          implicit val backend = createBackend(call)
 
-      error.asInstanceOf[GraphqlResponseError].message shouldBe "Internal server error"
-    }
+          an[InconsistentResponseNoDataNoError] should be thrownBy {
+            client.call[String](call, DummyVariables())
+          }
+        }
+      }
 
-    // TODO: Check for errors
-    it("mutating through the client") {
-      val parameters = Params(
-        "name" -> "test user",
-        "age"  -> Some(26),
-        "address" -> Params(
-          "zip"    -> 2300,
-          "city"   -> "cph",
-          "street" -> "etv"
-        ),
-        "hobbies" -> List("coding", "debugging")
-      )
-      val response =
-        client
-          .call[IO, Params.T, EmptyResponse](Mutation(TestSchema.Mutations.createUser), parameters)
-          .unsafeRunSync()
+      it("should throw an exception when there's an error field but it's empty") {
+        forAll { call: GraphqlCall[_, _] =>
+          implicit val decoder: StringDecoder = _ => Right(RawGraphqlResponse(None, Some(Nil)))
+          implicit val backend = createBackend(call)
 
-      response shouldBe EmptyResponse()
+          an[InconsistentResponseEmptyError] should be thrownBy {
+            client.call[String](call, DummyVariables())
+          }
+        }
+      }
+
+      it("should throw an exception when there's a graphql error") {
+        forAll { (call: GraphqlCall[_, _], errors: NonEmptyList[GraphqlResponseError]) =>
+          implicit val decoder: StringDecoder = { _ =>
+            Right(RawGraphqlResponse(None, Some(errors.toList)))
+          }
+          implicit val backend = createBackend(call)
+
+          val result = Try(client.call[String](call, DummyVariables())).toEither
+
+          assert(result.isLeft)
+          assert(result.left.get.isInstanceOf[GraphqlResponseError])
+          result.left.get shouldBe errors.head
+        }
+      }
+
+      it("should throw an exception when the field is not present in the response") {
+        forAll { (call: GraphqlCall[_, _], response: String) =>
+          implicit val decoder: StringDecoder = { _ =>
+            Right(RawGraphqlResponse(Some(Map("wrongFieldName" -> response)), None))
+          }
+          implicit val backend = createBackend(call)
+
+          an[InconsistentResponseNoData] should be thrownBy {
+            client.call[String](call, DummyVariables())
+          }
+        }
+      }
+
+      describe("integration with the Executor") {
+        import scala.concurrent.Await
+        import scala.concurrent.duration._
+        import scala.concurrent.ExecutionContext.Implicits.global
+        import sangria.ast
+        import sangria.marshalling.QueryAstInputUnmarshaller
+
+        implicit val queryAstInputUnmarshaller: QueryAstInputUnmarshaller = new QueryAstInputUnmarshaller()
+
+        def generateQuery(call: GraphqlCall[_, _]): ast.Document = {
+          new QueryGenerator(TestSchema.schema).generateQuery(call).right.get
+        }
+
+        def generateVariables(call: GraphqlCall[_, _], values: Map[String, Long]): ast.Value = {
+          new VariableGenerator(TestSchema.schema).generateVariables(call, values).right.get
+        }
+
+        object TestUserRepo extends UserRepo {
+          val user = Domain.User(1L, "user1", 1, List(), Domain.Address(1, "city", "street"))
+          def getUser(id: Long): Option[Domain.User] = Some(user)
+          def createUser(
+              name:    String,
+              age:     Option[StatusCode],
+              hobbies: List[String],
+              address: Domain.Address
+          ): Domain.User = user
+        }
+
+        it("should generate a response with the correct field name") {
+          val call = Query(TestSchema.Queries.getUser)
+          val result = Await
+            .result(
+              Executor.execute(
+                TestSchema.schema,
+                generateQuery(call),
+                TestUserRepo,
+                variables = generateVariables(call, Map("userId" -> 1L))
+              ),
+              5 seconds
+            )
+            .asInstanceOf[Map[String, Any]]
+
+          val data = result("data").asInstanceOf[Map[String, Any]]
+
+          assert(data.contains(call.field.name))
+        }
+
+      }
+
     }
 
   }

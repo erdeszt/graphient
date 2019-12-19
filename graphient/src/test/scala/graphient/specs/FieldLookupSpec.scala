@@ -1,6 +1,7 @@
 package graphient.specs
 
 import graphient._
+import graphient.model._
 import org.scalatest._
 
 class FieldLookupSpec extends FunSpec with Matchers {
