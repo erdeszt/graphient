@@ -37,7 +37,7 @@ lazy val graphientCore = (project in file("graphient"))
   .settings(
     name := "graphient",
     scalaVersion := "2.12.6",
-    version := "5.0.0-SNAPSHOT",
+    version := "5.0.0",
     scalacOptions ++= ScalacOptions,
     resolvers += Resolver.sonatypeRepo("releases"),
     bintrayRepository := "io.github.erdeszt",
