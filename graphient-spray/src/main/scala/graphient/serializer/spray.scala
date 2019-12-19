@@ -23,7 +23,7 @@ object spray extends DefaultJsonProtocol {
       case str: String =>
         JsString(str)
       case float: Float =>
-        JsNumber(float)
+        JsNumber(float.toDouble)
       case double: Double =>
         JsNumber(double)
       case int: Int =>
