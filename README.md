@@ -22,10 +22,11 @@ libraryDependencies += "io.github.erdeszt" %% "graphient-spray" % "1.0.0" // For
 ```scala
 // Graphient client
 import graphient._
+import graphient.model._
 // Graphient serializer
-import graphient.circe._  // for circe support
+import graphient.serializer.circe._  // for circe support
 // or
-import graphient.spray._  // for spray support
+import graphient.serializer.spray._  // for spray support
 ```
 
 ##### Import your favorite sttp backend(in this example we'll use `AsyncHttpClientCatsBackend` with `IO` from `cats-effect`)
