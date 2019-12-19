@@ -18,7 +18,7 @@ object spray extends DefaultJsonProtocol {
     }
   }
 
-  private def convertValue(value: Any): JsValue = {
+  private def writeValue(value: Any): JsValue = {
     value match {
       case str: String =>
         JsString(str)
@@ -35,29 +35,36 @@ object spray extends DefaultJsonProtocol {
       case option: Option[_] =>
         option match {
           case None             => JsNull
-          case Some(innerValue) => convertValue(innerValue)
+          case Some(innerValue) => writeValue(innerValue)
         }
       case list: List[_] =>
-        JsArray(list.map(convertValue).toVector)
+        JsArray(list.map(writeValue).toVector)
       case array: Array[_] =>
-        JsArray(array.map(convertValue).toVector)
+        JsArray(array.map(writeValue).toVector)
       case obj: Map[_, _] =>
-        val mappedValues = obj.mapValues(convertValue).asInstanceOf[Map[String, JsValue]]
+        val mappedValues = obj.mapValues(writeValue).asInstanceOf[Map[String, JsValue]]
         JsObject(mappedValues)
     }
   }
 
-  implicit def graphqlRequestSprayFormat[T: JsonFormat] = jsonFormat2(GraphqlRequest[T](_, _))
+  implicit def graphqlRequestSprayFormat[T](implicit paramWriter: JsonWriter[T]) = {
+    new JsonWriter[GraphqlRequest[T]] {
+      def write(obj: GraphqlRequest[T]): JsValue = {
+        JsObject(
+          Map[String, JsValue](
+            "query"     -> JsString(obj.query),
+            "variables" -> paramWriter.write(obj.variables)
+          )
+        )
+      }
+    }
+  }
   implicit val graphqlResponseErrorLocationSprayForamt = jsonFormat2(GraphqlResponseErrorLocation(_, _))
   implicit val graphqlResponseErrorSprayFormat         = jsonFormat3(GraphqlResponseError(_, _, _))
   implicit def rawGraphqlResponseSprayFormat[T: JsonFormat] = jsonFormat2(RawGraphqlResponse[T](_, _))
-  implicit val mapOfStringToAnySprayEncoder = new JsonFormat[Map[String, Any]] {
+  implicit val mapOfStringToAnySprayEncoder = new JsonWriter[Map[String, Any]] {
     def write(obj: Map[String, Any]): JsValue = {
-      JsObject(obj.mapValues(convertValue))
-    }
-
-    def read(json: JsValue): Map[String, Any] = {
-      ???
+      JsObject(obj.mapValues(writeValue))
     }
   }
 
