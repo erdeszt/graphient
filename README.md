@@ -100,7 +100,7 @@ val variableGenerator = new VariableGenerator(TestSchema)
 
 Generate a query or a mutation using either the schema directly or the name of the query:
 ```scala
-val queryByDefinition = queryGenerator.generateQuery(Query(TestSchema.Qeries.getUser))
+val queryByDefinition = queryGenerator.generateQuery(Query(TestSchema.Queries.getUser))
 val queryByName = queryGenerator.generateQuery(QueryByName("getUser"))
 val mutationByDefinition = queryGenerator.generateQuery(Mutation(TestSchema.Mutations.get.createUser))
 val mutationByName = queryGenerator.generateQuery(MutationByName("createUser"))
