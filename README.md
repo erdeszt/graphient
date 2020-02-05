@@ -10,9 +10,9 @@ Library for generating and executing Graphql queries based on [Sangria](https://
 
 ```scala
 resolvers += Resolver.bintrayRepo("erdeszt", "io.github.erdeszt")
-libraryDependencies += "io.github.erdeszt" %% "graphient" % "4.0.1"
-libraryDependencies += "io.github.erdeszt" %% "graphient-circe" % "1.0.0" // For circe support
-libraryDependencies += "io.github.erdeszt" %% "graphient-spray" % "1.0.0" // For spray support
+libraryDependencies += "io.github.erdeszt" %% "graphient" % "6.0.0"
+libraryDependencies += "io.github.erdeszt" %% "graphient-circe" % "2.0.0" // For circe support
+libraryDependencies += "io.github.erdeszt" %% "graphient-spray" % "2.0.0" // For spray support
 ```
 
 #### Using the high level client
