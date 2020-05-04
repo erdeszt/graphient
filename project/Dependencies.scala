@@ -17,8 +17,8 @@ object Dependencies {
   )
 
   lazy val scalaTest = Seq(
-    "org.scalatest" %% "scalatest" % "3.0.5",
-    "org.scalacheck" %% "scalacheck" % "1.14.1"
+    "org.scalatest" %% "scalatest" % "3.1.1",
+    "org.scalacheck" %% "scalacheck" % "1.14.3"
   )
 
   private lazy val circeVersion = "0.12.1"
@@ -29,7 +29,7 @@ object Dependencies {
   )
 
   lazy val spray = Seq(
-    "io.spray" %% "spray-json" % "1.3.2"
+    "io.spray" %% "spray-json" % "1.3.5"
   )
 
 }
