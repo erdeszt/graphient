@@ -9,14 +9,15 @@ import graphient.serializer._
 import graphient.IdMonadError._
 import graphient.TestSchema.Domain
 import graphient.TestSchema.Domain.UserRepo
-import org.scalatest._
-import org.scalatest.prop.PropertyChecks
+import org.scalatest.funspec.AnyFunSpec
+import org.scalatest.matchers.should.Matchers
+import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 import sangria.execution.Executor
 import sangria.renderer.QueryRenderer
 
 import scala.util.Try
 
-class ClientSpec extends FunSpec with PropertyChecks with Matchers with Generators {
+class ClientSpec extends AnyFunSpec with ScalaCheckPropertyChecks with Matchers with Generators {
 
   case class DummyVariables()
 

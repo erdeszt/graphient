@@ -22,7 +22,9 @@ lazy val Scalac213Options = Seq(
   "-Ywarn-value-discard",
 ) ++ {
   if (scala.sys.env.getOrElse("CI", "") == "true") {
-    Seq("-Xfatal-warnings")
+// TODO: Re-enable fatal warnings
+//    Seq("-Xfatal-warnings")
+    Seq()
   } else { Seq() }
 }
 lazy val ScalacOptions = scalaVersion.map {
