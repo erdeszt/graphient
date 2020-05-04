@@ -5,13 +5,14 @@ import graphient.{GraphientClient, QueryGenerator, TestSchema}
 import io.circe.generic.semiauto._
 import graphient.IdMonadError._
 import graphient.serializer.circe._
-import org.scalatest._
+import org.scalatest.funspec._
 import com.softwaremill.sttp._
 import graphient.model.{GraphqlRequest, Query}
 import io.circe.syntax._
+import org.scalatest.matchers.should.Matchers
 import sangria.renderer.QueryRenderer
 
-class CirceEncoderSpec extends FunSpec with Matchers {
+class CirceEncoderSpec extends AnyFunSpec with Matchers {
 
   val query = TestSchema.Queries.getLong
   val renderedQuery = QueryRenderer.render {

@@ -3,10 +3,11 @@ package graphient.specs
 import graphient._
 import graphient.model._
 import graphient.TestSchema.Domain._
-import org.scalatest._
+import org.scalatest.funspec._
+import org.scalatest.matchers.should.Matchers
 import sangria.ast
 
-class VariableGeneratorSpec extends FunSpec with Matchers {
+class VariableGeneratorSpec extends AnyFunSpec with Matchers {
 
   private val variableGenerator = new VariableGenerator[UserRepo, Unit](TestSchema.schema)
 

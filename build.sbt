@@ -1,6 +1,6 @@
 import Dependencies._
 
-lazy val ScalacOptions = Seq(
+lazy val Scalac213Options = Seq(
   "-deprecation",
   "-encoding",
   "utf-8",
@@ -11,15 +11,8 @@ lazy val ScalacOptions = Seq(
   "-language:implicitConversions",
   "-language:postfixOps",
   "-unchecked",
-  "-Xfuture",
   "-Xlint",
-  "-Yno-adapted-args",
-  "-Ypartial-unification",
   "-Ywarn-extra-implicit",
-  "-Ywarn-inaccessible",
-  "-Ywarn-infer-any",
-  "-Ywarn-nullary-override",
-  "-Ywarn-nullary-unit",
   "-Ywarn-numeric-widen",
   "-Ywarn-unused:implicits",
   "-Ywarn-unused:imports",
@@ -29,21 +22,37 @@ lazy val ScalacOptions = Seq(
   "-Ywarn-value-discard",
 ) ++ {
   if (scala.sys.env.getOrElse("CI", "") == "true") {
-    Seq("-Xfatal-warnings")
+// TODO: Re-enable fatal warnings
+//    Seq("-Xfatal-warnings")
+    Seq()
   } else { Seq() }
+}
+lazy val ScalacOptions = scalaVersion.map {
+  case v if v.startsWith("2.12") =>
+    Scalac213Options ++ Seq(
+      "-Ypartial-unification",
+      "-Ywarn-inaccessible",
+      "-Yno-adapted-args",
+      "-Ywarn-infer-any",
+      "-Ywarn-nullary-override",
+      "-Ywarn-nullary-unit",
+      "-Xfuture",
+    )
+  case _ => Scalac213Options
 }
 
 lazy val graphientCore = (project in file("graphient"))
   .settings(
     name := "graphient",
-    scalaVersion := "2.12.6",
-    version := "6.0.0",
-    scalacOptions ++= ScalacOptions,
+    scalaVersion := "2.12.11",
+    crossScalaVersions := List("2.12.11", "2.13.2"),
+    version := "6.1.0",
+    scalacOptions ++= ScalacOptions.value,
     resolvers += Resolver.sonatypeRepo("releases"),
     bintrayRepository := "io.github.erdeszt",
     organization := "io.github.erdeszt",
     licenses += ("MIT", url("http://opensource.org/licenses/MIT")),
-    addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.9.7"),
+    addCompilerPlugin("org.typelevel" %% "kind-projector" % "0.10.3"),
     libraryDependencies ++= sangria,
     libraryDependencies ++= cats,
     libraryDependencies ++= sttp,
@@ -53,9 +62,10 @@ lazy val graphientCore = (project in file("graphient"))
 lazy val graphientCirce = (project in file("graphient-circe"))
   .settings(
     name := "graphient-circe",
-    scalaVersion := "2.12.6",
-    version := "2.0.0",
-    scalacOptions ++= ScalacOptions,
+    scalaVersion := "2.12.11",
+    crossScalaVersions := List("2.12.11", "2.13.2"),
+    version := "2.1.0",
+    scalacOptions ++= ScalacOptions.value,
     resolvers += Resolver.sonatypeRepo("releases"),
     organization := "io.github.erdeszt",
     bintrayRepository := "io.github.erdeszt",
@@ -67,9 +77,10 @@ lazy val graphientCirce = (project in file("graphient-circe"))
 lazy val graphientSpray = (project in file("graphient-spray"))
   .settings(
     name := "graphient-spray",
-    scalaVersion := "2.12.6",
-    version := "2.0.0",
-    scalacOptions ++= ScalacOptions,
+    scalaVersion := "2.12.11",
+    crossScalaVersions := List("2.12.11", "2.13.2"),
+    version := "2.1.0",
+    scalacOptions ++= ScalacOptions.value,
     resolvers += Resolver.sonatypeRepo("releases"),
     organization := "io.github.erdeszt",
     bintrayRepository := "io.github.erdeszt",

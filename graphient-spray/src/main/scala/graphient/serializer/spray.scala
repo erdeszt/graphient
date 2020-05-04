@@ -64,7 +64,8 @@ object spray extends DefaultJsonProtocol {
   implicit def rawGraphqlResponseSprayFormat[T: JsonFormat] = jsonFormat2(RawGraphqlResponse[T](_, _))
   implicit val mapOfStringToAnySprayEncoder = new JsonWriter[Map[String, Any]] {
     def write(obj: Map[String, Any]): JsValue = {
-      JsObject(obj.mapValues(writeValue))
+      val values = obj.mapValues(writeValue).toMap
+      JsObject(values)
     }
   }
 

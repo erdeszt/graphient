@@ -1,17 +1,17 @@
 package graphient.serializer
 
-import org.scalatest._
 import com.softwaremill.sttp.testing.SttpBackendStub
 import graphient.{GraphientClient, QueryGenerator, TestSchema}
 import graphient.IdMonadError._
 import graphient.serializer.spray._
-import org.scalatest._
 import com.softwaremill.sttp._
 import graphient.model.{GraphqlRequest, Query}
 import _root_.spray.json._
+import org.scalatest.funspec.AnyFunSpec
+import org.scalatest.matchers.should.Matchers
 import sangria.renderer.QueryRenderer
 
-class SprayEncoderSpec extends FunSpec with Matchers with DefaultJsonProtocol {
+class SprayEncoderSpec extends AnyFunSpec with Matchers with DefaultJsonProtocol {
 
   val query         = TestSchema.Queries.getLong
   val renderedQuery = QueryRenderer.render(new QueryGenerator(TestSchema.schema).generateQuery(Query(query)).right.get)

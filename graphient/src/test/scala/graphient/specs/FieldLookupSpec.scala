@@ -2,9 +2,10 @@ package graphient.specs
 
 import graphient._
 import graphient.model._
-import org.scalatest._
+import org.scalatest.funspec._
+import org.scalatest.matchers.should.Matchers
 
-class FieldLookupSpec extends FunSpec with Matchers {
+class FieldLookupSpec extends AnyFunSpec with Matchers {
 
   object TestObject extends FieldLookup
 

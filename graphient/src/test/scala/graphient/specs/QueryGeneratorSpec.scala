@@ -3,10 +3,11 @@ package graphient.specs
 import graphient._
 import graphient.model._
 import graphient.TestSchema.Domain._
-import org.scalatest._
+import org.scalatest.funspec._
+import org.scalatest.matchers.should.Matchers
 import sangria.validation.QueryValidator
 
-class QueryGeneratorSpec extends FunSpec with Matchers {
+class QueryGeneratorSpec extends AnyFunSpec with Matchers {
 
   private val queryGenerator = new QueryGenerator[UserRepo, Unit](TestSchema.schema)
 
