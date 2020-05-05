@@ -13,7 +13,7 @@ object Dependencies {
   )
 
   lazy val sttp = Seq(
-    "com.softwaremill.sttp" %% "core" % "1.6.7"
+    "com.softwaremill.sttp.client" %% "core" % "2.1.0"
   )
 
   lazy val scalaTest = Seq(

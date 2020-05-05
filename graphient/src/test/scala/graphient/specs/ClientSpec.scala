@@ -1,8 +1,9 @@
 package graphient.specs
 
+import cats.Id
 import cats.data.NonEmptyList
-import com.softwaremill.sttp._
-import com.softwaremill.sttp.testing.SttpBackendStub
+import sttp.client._
+import sttp.client.testing.SttpBackendStub
 import graphient.{Generators, GraphientClient, QueryGenerator, TestSchema, VariableGenerator}
 import graphient.model._
 import graphient.serializer._
@@ -14,6 +15,7 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 import sangria.execution.Executor
 import sangria.renderer.QueryRenderer
+import sttp.model.{HeaderNames, MediaType, Method, StatusCode}
 
 import scala.util.Try
 
@@ -30,7 +32,12 @@ class ClientSpec extends AnyFunSpec with ScalaCheckPropertyChecks with Matchers 
   val fakeEndpoint   = uri"http://fakehost"
   val client         = new GraphientClient(TestSchema.schema, fakeEndpoint)
   val queryGenerator = new QueryGenerator(TestSchema.schema)
-  val defaultHeaders = ("Content-Type", "application/json") :: sttp.headers.toList
+  val defaultHeaders = {
+    List(
+      sttp.model.Header(HeaderNames.ContentType, "application/json"),
+      sttp.model.Header(HeaderNames.AcceptEncoding, "gzip, deflate")
+    )
+  }
 
   def renderCall(call: GraphqlCall[_, _]): String = {
     queryGenerator.generateQuery(call) match {
@@ -59,7 +66,7 @@ class ClientSpec extends AnyFunSpec with ScalaCheckPropertyChecks with Matchers 
             request.body shouldBe StringBody(
               dummyEncoder.encode(GraphqlRequest(renderedQuery, DummyVariables())),
               "UTF-8",
-              Some("application/json")
+              Some(MediaType.ApplicationJson)
             )
             request.method shouldBe Method.POST
             request.uri shouldBe fakeEndpoint
@@ -71,11 +78,12 @@ class ClientSpec extends AnyFunSpec with ScalaCheckPropertyChecks with Matchers 
 
       it("should add extra http headers") {
         forAll { (call: GraphqlCall[_, _], extraHeaders: List[Header]) =>
-          val extraHeaderList = extraHeaders.map(h => (h.key, h.value))
-          val result          = client.createRequest(call, DummyVariables(), extraHeaderList: _*)
+          val extraHeaderList  = extraHeaders.map(h => (h.key, h.value))
+          val result           = client.createRequest(call, DummyVariables(), extraHeaderList: _*)
+          val extraSttpHeaders = extraHeaderList.map { case (k, v) => sttp.model.Header(k, v) }
 
           assertRight(result) { request =>
-            request.headers should contain theSameElementsAs (defaultHeaders ++ extraHeaderList.distinct)
+            request.headers should contain theSameElementsAs (defaultHeaders ++ extraSttpHeaders.distinct)
             ()
           }
         }
@@ -96,7 +104,7 @@ class ClientSpec extends AnyFunSpec with ScalaCheckPropertyChecks with Matchers 
             request.body shouldBe StringBody(
               dummyEncoder.encode(GraphqlRequest(renderCall(call), DummyVariables())),
               "UTF-8",
-              Some("application/json")
+              Some(MediaType.ApplicationJson)
             )
             request.method shouldBe Method.POST
             request.uri shouldBe fakeEndpoint
@@ -224,7 +232,7 @@ class ClientSpec extends AnyFunSpec with ScalaCheckPropertyChecks with Matchers 
           def getUser(id: Long): Option[Domain.User] = Some(user)
           def createUser(
               name:    String,
-              age:     Option[StatusCode],
+              age:     Option[Int],
               hobbies: List[String],
               address: Domain.Address
           ): Domain.User = user
