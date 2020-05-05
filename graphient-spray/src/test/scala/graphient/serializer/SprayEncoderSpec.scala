@@ -1,10 +1,10 @@
 package graphient.serializer
 
-import com.softwaremill.sttp.testing.SttpBackendStub
+import sttp.client.testing.SttpBackendStub
 import graphient.{GraphientClient, QueryGenerator, TestSchema}
 import graphient.IdMonadError._
 import graphient.serializer.spray._
-import com.softwaremill.sttp._
+import sttp.client._
 import graphient.model.{GraphqlRequest, Query}
 import _root_.spray.json._
 import org.scalatest.funspec.AnyFunSpec

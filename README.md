@@ -10,9 +10,9 @@ Library for generating and executing Graphql queries based on [Sangria](https://
 
 ```scala
 resolvers += Resolver.bintrayRepo("erdeszt", "io.github.erdeszt")
-libraryDependencies += "io.github.erdeszt" %% "graphient" % "6.1.0"
-libraryDependencies += "io.github.erdeszt" %% "graphient-circe" % "2.1.0" // For circe support
-libraryDependencies += "io.github.erdeszt" %% "graphient-spray" % "2.1.0" // For spray support
+libraryDependencies += "io.github.erdeszt" %% "graphient" % "7.0.0"
+libraryDependencies += "io.github.erdeszt" %% "graphient-circe" % "3.0.0" // For circe support
+libraryDependencies += "io.github.erdeszt" %% "graphient-spray" % "3.0.0" // For spray support
 ```
 
 #### Using the high level client
@@ -50,7 +50,7 @@ implicit val sttpBackend = AsyncHttpClientCatsBackend[IO]()
 ##### Create a Graphient client with your schema ([TestSchema definition](https://github.com/erdeszt/graphient/blob/master/graphient/src/test/scala/graphient/TestSchema.scala)):
 
 ```scala
-import com.softwaremill.sttp._ // For the `uri` string interpolator
+import sttp.model._ // For the `uri` string interpolator
 
 val client = new GraphientClient(TestSchema.schema, uri"http://yourapi.com/graphql")
 ```

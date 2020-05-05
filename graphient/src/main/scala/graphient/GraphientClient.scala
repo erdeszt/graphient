@@ -1,6 +1,6 @@
 package graphient
 
-import com.softwaremill.sttp._
+import sttp.client._
 import cats.syntax.flatMap._
 import cats.syntax.either._
 import cats.syntax.functor._
@@ -8,6 +8,7 @@ import graphient.model._
 import graphient.serializer._
 import sangria.renderer.QueryRenderer
 import sangria.schema.Schema
+import sttp.model.{MediaType, Uri}
 
 class GraphientClient(schema: Schema[_, _], endpoint: Uri) {
 
@@ -17,13 +18,14 @@ class GraphientClient(schema: Schema[_, _], endpoint: Uri) {
       call:           GraphqlCall[_, _],
       variables:      P,
       headers:        (String, String)*
-  )(implicit encoder: Encoder[GraphqlRequest[P]]): Either[GraphqlCallError, Request[String, Nothing]] = {
+  )(implicit encoder: Encoder[GraphqlRequest[P]])
+    : Either[GraphqlCallError, Request[Either[String, String], Nothing]] = {
     queryGenerator.generateQuery(call).map { query =>
       val renderedQuery = QueryRenderer.render(query)
       val payload       = GraphqlRequest(renderedQuery, variables)
-      val body          = StringBody(encoder.encode(payload), "UTF-8", Some("application/json"))
+      val body          = StringBody(encoder.encode(payload), "UTF-8", Some(MediaType.ApplicationJson))
 
-      sttp
+      basicRequest
         .body(body)
         .contentType("application/json")
         .post(endpoint)
@@ -42,7 +44,7 @@ class GraphientClient(schema: Schema[_, _], endpoint: Uri) {
         headers:     (String, String)*
     )(
         implicit
-        backend: SttpBackend[F, _],
+        backend: SttpBackend[F, _, NothingT],
         effect:  cats.MonadError[F, Throwable],
         encoder: Encoder[GraphqlRequest[P]],
         decoder: Decoder[RawGraphqlResponse[T]]
@@ -57,16 +59,13 @@ class GraphientClient(schema: Schema[_, _], endpoint: Uri) {
       headers:   (String, String)*
   )(
       implicit
-      backend: SttpBackend[F, _],
+      backend: SttpBackend[F, _, NothingT],
       effect:  cats.MonadError[F, Throwable],
       encoder: Encoder[GraphqlRequest[P]],
       decoder: Decoder[RawGraphqlResponse[T]]
   ): F[T] = {
     for {
-      request <- createRequest(call, variables, headers: _*) match {
-        case Left(error)         => effect.raiseError[Request[String, Nothing]](error)
-        case Right(requestValue) => effect.pure(requestValue)
-      }
+      request <- effect.fromEither(createRequest(call, variables, headers: _*))
       rawResponse <- request.send()
       rawResponseBody <- effect.fromEither(rawResponse.body.leftMap(InvalidResponseBody))
       decodedResponse <- effect.fromEither(decoder.decode(rawResponseBody))
