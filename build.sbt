@@ -45,8 +45,8 @@ lazy val graphientCore = (project in file("graphient"))
   .settings(
     name := "graphient",
     scalaVersion := "2.12.11",
-    crossScalaVersions := List("2.12.11", "2.13.2"),
-    version := "6.1.0",
+    crossScalaVersions := List("2.12.11", "2.13.1", "2.13.2"),
+    version := "6.2.0",
     scalacOptions ++= ScalacOptions.value,
     resolvers += Resolver.sonatypeRepo("releases"),
     bintrayRepository := "io.github.erdeszt",
@@ -63,8 +63,8 @@ lazy val graphientCirce = (project in file("graphient-circe"))
   .settings(
     name := "graphient-circe",
     scalaVersion := "2.12.11",
-    crossScalaVersions := List("2.12.11", "2.13.2"),
-    version := "2.1.0",
+    crossScalaVersions := List("2.12.11", "2.13.1", "2.13.2"),
+    version := "2.2.0",
     scalacOptions ++= ScalacOptions.value,
     resolvers += Resolver.sonatypeRepo("releases"),
     organization := "io.github.erdeszt",
@@ -78,8 +78,8 @@ lazy val graphientSpray = (project in file("graphient-spray"))
   .settings(
     name := "graphient-spray",
     scalaVersion := "2.12.11",
-    crossScalaVersions := List("2.12.11", "2.13.2"),
-    version := "2.1.0",
+    crossScalaVersions := List("2.12.11", "2.13.1", "2.13.2"),
+    version := "2.2.0",
     scalacOptions ++= ScalacOptions.value,
     resolvers += Resolver.sonatypeRepo("releases"),
     organization := "io.github.erdeszt",
