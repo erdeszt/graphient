@@ -16,17 +16,25 @@ object model {
   final case class QueryByName(field:    String) extends NamedGraphqlCall
   final case class MutationByName(field: String) extends NamedGraphqlCall
 
-  sealed trait GraphqlCallError extends Throwable
-  final case class FieldNotFound(graphqlCall:         NamedGraphqlCall) extends GraphqlCallError
-  final case class ArgumentNotFound[T](argument:      Argument[T]) extends GraphqlCallError
-  final case class ArgumentFieldNotFound[T](argument: Argument[T], field: String) extends GraphqlCallError
-  final case class InvalidArgumentValue[T](argument:  Argument[T], value: Any) extends GraphqlCallError
+  sealed abstract class GraphqlCallError(message: String) extends RuntimeException(message)
+  final case class FieldNotFound(graphqlCall:     NamedGraphqlCall)
+      extends GraphqlCallError(s"Could not find field: ${graphqlCall.field}")
+  final case class ArgumentNotFound[T](argument: Argument[T])
+      extends GraphqlCallError(s"Argument not found: ${argument.name}")
+  final case class ArgumentFieldNotFound[T](argument: Argument[T], field: String)
+      extends GraphqlCallError(s"Argument field not found: ${argument.name} - ${field}")
+  final case class InvalidArgumentValue[T](argument: Argument[T], value: Any)
+      extends GraphqlCallError(s"Invalid value fort argument `${argument.name}`: ${value}")
 
-  sealed trait GraphqlClientError extends Throwable
-  final case class InvalidResponseBody(invalidBody:            String) extends GraphqlClientError
-  final case class InconsistentResponseNoDataNoError(response: RawGraphqlResponse[_]) extends GraphqlClientError
-  final case class InconsistentResponseEmptyError(response:    RawGraphqlResponse[_]) extends GraphqlClientError
-  final case class InconsistentResponseNoData(response:        RawGraphqlResponse[_]) extends GraphqlClientError
+  sealed abstract class GraphqlClientError(message: String) extends RuntimeException(message)
+  final case class InvalidResponseBody(invalidBody: String)
+      extends GraphqlClientError(s"Response body is invalid: ${invalidBody}")
+  final case class InconsistentResponseNoDataNoError(response: RawGraphqlResponse[_])
+      extends GraphqlClientError(s"No data or error field in the graphql response.")
+  final case class InconsistentResponseEmptyError(response: RawGraphqlResponse[_])
+      extends GraphqlClientError("No error field in the graphql response.")
+  final case class InconsistentResponseNoData(response: RawGraphqlResponse[_])
+      extends GraphqlClientError("No data field in the graphql response")
 
   final case class GraphqlRequest[T](query: String, variables: T)
 
@@ -39,7 +47,9 @@ object model {
       message:   String,
       path:      List[String],
       locations: List[GraphqlResponseErrorLocation]
-  ) extends Throwable
+  ) extends RuntimeException(
+        s"Response error: ${message} at: ${locations.mkString(";")}, path: ${path.mkString(";")}"
+      )
 
   final case class GraphqlResponseErrorLocation(line: Int, column: Int)
 
