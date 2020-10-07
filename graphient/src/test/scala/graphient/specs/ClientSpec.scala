@@ -97,7 +97,7 @@ class ClientSpec extends AnyFunSpec with ScalaCheckPropertyChecks with Matchers 
 
       type StringDecoder = Decoder[RawGraphqlResponse[String]]
 
-      def createBackend(call: GraphqlCall[_, _]): SttpBackendStub[Id, Nothing] = {
+      def createBackend(call: GraphqlCall[_, _]): SttpBackendStub[Id, Nothing, NothingT] = {
         SttpBackendStub.synchronous
           .whenRequestMatches { request =>
             // Using matchers for better error messages
