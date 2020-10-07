@@ -15,7 +15,7 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 import sangria.execution.Executor
 import sangria.renderer.QueryRenderer
-import sttp.model.{HeaderNames, MediaType, Method, StatusCode}
+import sttp.model.{HeaderNames, MediaType, Method}
 
 import scala.util.Try
 
