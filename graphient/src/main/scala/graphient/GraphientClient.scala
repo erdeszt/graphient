@@ -1,6 +1,6 @@
 package graphient
 
-import sttp.client._
+import sttp.client3._
 import cats.syntax.flatMap._
 import cats.syntax.either._
 import cats.syntax.functor._
@@ -19,11 +19,11 @@ class GraphientClient(schema: Schema[_, _], endpoint: Uri) {
       variables:      P,
       headers:        (String, String)*
   )(implicit encoder: Encoder[GraphqlRequest[P]])
-    : Either[GraphqlCallError, Request[Either[String, String], Nothing]] = {
+    : Either[GraphqlCallError, Request[Either[String, String], Any]] = {
     queryGenerator.generateQuery(call).map { query =>
       val renderedQuery = QueryRenderer.render(query)
       val payload       = GraphqlRequest(renderedQuery, variables)
-      val body          = StringBody(encoder.encode(payload), "UTF-8", Some(MediaType.ApplicationJson))
+      val body          = StringBody(encoder.encode(payload), "UTF-8", MediaType.ApplicationJson)
 
       basicRequest
         .body(body)
@@ -44,7 +44,7 @@ class GraphientClient(schema: Schema[_, _], endpoint: Uri) {
         headers:     (String, String)*
     )(
         implicit
-        backend: SttpBackend[F, _, NothingT],
+        backend: SttpBackend[F, _],
         effect:  cats.MonadError[F, Throwable],
         encoder: Encoder[GraphqlRequest[P]],
         decoder: Decoder[RawGraphqlResponse[T]]
@@ -59,14 +59,14 @@ class GraphientClient(schema: Schema[_, _], endpoint: Uri) {
       headers:   (String, String)*
   )(
       implicit
-      backend: SttpBackend[F, _, NothingT],
+      backend: SttpBackend[F, _],
       effect:  cats.MonadError[F, Throwable],
       encoder: Encoder[GraphqlRequest[P]],
       decoder: Decoder[RawGraphqlResponse[T]]
   ): F[T] = {
     for {
       request <- effect.fromEither(createRequest(call, variables, headers: _*))
-      rawResponse <- request.send()
+      rawResponse <- request.send(backend)
       rawResponseBody <- effect.fromEither(rawResponse.body.leftMap(InvalidResponseBody))
       decodedResponse <- effect.fromEither(decoder.decode(rawResponseBody))
       responseData <- (decodedResponse.errors, decodedResponse.data) match {

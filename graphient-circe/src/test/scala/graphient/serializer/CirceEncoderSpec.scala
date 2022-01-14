@@ -1,12 +1,12 @@
 package graphient.serializer
 
-import sttp.client.testing.SttpBackendStub
+import sttp.client3.testing.SttpBackendStub
 import graphient.{GraphientClient, QueryGenerator, TestSchema}
 import io.circe.generic.semiauto._
 import graphient.IdMonadError._
 import graphient.serializer.circe._
 import org.scalatest.funspec._
-import sttp.client._
+import sttp.client3._
 import graphient.model.{GraphqlRequest, Query}
 import io.circe.syntax._
 import org.scalatest.matchers.should.Matchers
