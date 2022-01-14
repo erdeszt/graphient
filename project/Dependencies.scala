@@ -3,17 +3,17 @@ import sbt._
 object Dependencies {
 
   lazy val sangria = Seq(
-    "org.sangria-graphql" %% "sangria" % "2.0.0-M1",
-    "org.sangria-graphql" %% "sangria-circe" % "1.3.0"
+    "org.sangria-graphql" %% "sangria" % "2.1.6",
+    "org.sangria-graphql" %% "sangria-circe" % "1.3.2"
   )
 
   lazy val cats = Seq(
-    "org.typelevel" %% "cats-core" % "2.0.0",
-    "org.typelevel" %% "cats-effect" % "2.0.0"
+    "org.typelevel" %% "cats-core" % "2.6.1",
+    "org.typelevel" %% "cats-effect" % "2.5.4"
   )
 
   lazy val sttp = Seq(
-    "com.softwaremill.sttp.client" %% "core" % "2.1.0"
+    "com.softwaremill.sttp.client3" %% "core" % "3.3.18"
   )
 
   lazy val scalaTest = Seq(
@@ -22,7 +22,7 @@ object Dependencies {
     "org.scalacheck" %% "scalacheck" % "1.14.3"
   )
 
-  private lazy val circeVersion = "0.12.1"
+  private lazy val circeVersion = "0.14.1"
   lazy val circe = Seq(
     "io.circe" %% "circe-core" % circeVersion,
     "io.circe" %% "circe-generic" % circeVersion,

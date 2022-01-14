@@ -2,8 +2,8 @@ package graphient.specs
 
 import cats.Id
 import cats.data.NonEmptyList
-import sttp.client._
-import sttp.client.testing.SttpBackendStub
+import sttp.client3._
+import sttp.client3.testing.SttpBackendStub
 import graphient.{Generators, GraphientClient, QueryGenerator, TestSchema, VariableGenerator}
 import graphient.model._
 import graphient.serializer._
@@ -66,7 +66,7 @@ class ClientSpec extends AnyFunSpec with ScalaCheckPropertyChecks with Matchers 
             request.body shouldBe StringBody(
               dummyEncoder.encode(GraphqlRequest(renderedQuery, DummyVariables())),
               "UTF-8",
-              Some(MediaType.ApplicationJson)
+              MediaType.ApplicationJson
             )
             request.method shouldBe Method.POST
             request.uri shouldBe fakeEndpoint
@@ -97,14 +97,14 @@ class ClientSpec extends AnyFunSpec with ScalaCheckPropertyChecks with Matchers 
 
       type StringDecoder = Decoder[RawGraphqlResponse[String]]
 
-      def createBackend(call: GraphqlCall[_, _]): SttpBackendStub[Id, Nothing] = {
+      def createBackend(call: GraphqlCall[_, _]): SttpBackendStub[Id, Any] = {
         SttpBackendStub.synchronous
           .whenRequestMatches { request =>
             // Using matchers for better error messages
             request.body shouldBe StringBody(
               dummyEncoder.encode(GraphqlRequest(renderCall(call), DummyVariables())),
               "UTF-8",
-              Some(MediaType.ApplicationJson)
+              MediaType.ApplicationJson
             )
             request.method shouldBe Method.POST
             request.uri shouldBe fakeEndpoint
