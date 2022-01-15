@@ -44,7 +44,7 @@ lazy val ScalacOptions = scalaVersion.map {
 lazy val graphientCore = (project in file("graphient"))
   .settings(
     name := "graphient",
-    scalaVersion := "2.12.11",
+    scalaVersion := "2.13.8",
     crossScalaVersions := List("2.12.15", "2.13.8"),
     version := "7.1.2",
     scalacOptions ++= ScalacOptions.value,
@@ -62,7 +62,7 @@ lazy val graphientCore = (project in file("graphient"))
 lazy val graphientCirce = (project in file("graphient-circe"))
   .settings(
     name := "graphient-circe",
-    scalaVersion := "2.12.11",
+    scalaVersion := "2.13.8",
     crossScalaVersions := List("2.12.15", "2.13.8"),
     version := "3.1.1",
     scalacOptions ++= ScalacOptions.value,
@@ -77,7 +77,7 @@ lazy val graphientCirce = (project in file("graphient-circe"))
 lazy val graphientSpray = (project in file("graphient-spray"))
   .settings(
     name := "graphient-spray",
-    scalaVersion := "2.12.11",
+    scalaVersion := "2.13.8",
     crossScalaVersions := List("2.12.15", "2.13.8"),
     version := "3.1.1",
     scalacOptions ++= ScalacOptions.value,
