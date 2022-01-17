@@ -14,4 +14,4 @@ jobs:
             ~/.cache/coursier
           key: ${{ runner.os }}-sbt-cache-v2-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('project/build.properties') }}-${{ hashFiles('project/Dependencies') }}
       - name: Test
-        run: sbt test
+        run: sbt +test
